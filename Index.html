@@ -1,0 +1,1491 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulateur SC-100</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centered working column. Home stacks cards, quiz shows one question at a time, results end on a per-domain review. */
+:root {
+  --bg: #F2F5F7; --surface: #FFFFFF; --ink: #13202A; --muted: #566876; --line: #D5DDE3;
+  --accent: #0E6B78; --accent-ink: #FFFFFF; --accent-soft: #DDF0F2;
+  --ok: #1B7A44; --ok-soft: #E0F3E8; --bad: #B2342B; --bad-soft: #FBE7E4; --warn: #7A5400; --warn-soft: #FBF0D3;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D141A; --surface: #151F27; --ink: #E5ECF1; --muted: #8FA2B1; --line: #27343F;
+    --accent: #55C2CF; --accent-ink: #07242A; --accent-soft: #12323A;
+    --ok: #5CCB8A; --ok-soft: #12301F; --bad: #F08A80; --bad-soft: #3A1C19; --warn: #E3B34A; --warn-soft: #33280F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D141A; --surface: #151F27; --ink: #E5ECF1; --muted: #8FA2B1; --line: #27343F;
+  --accent: #55C2CF; --accent-ink: #07242A; --accent-soft: #12323A;
+  --ok: #5CCB8A; --ok-soft: #12301F; --bad: #F08A80; --bad-soft: #3A1C19; --warn: #E3B34A; --warn-soft: #33280F;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5;
+  padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+#app { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+h1 { font-size: clamp(1.7rem, 5vw, 2.3rem); line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; text-wrap: balance; }
+h2 { font-size: 1.05rem; margin: 0 0 12px; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 60ch; }
+.sub { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 0 8px; font-weight: 600; }
+.hero .sub { margin-top: 0; }
+.small { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stats > div { background: var(--surface); padding: 12px 16px; display: flex; flex-direction: column; }
+.num { font-size: 1.6rem; font-weight: 500; line-height: 1.2; }
+.lbl { font-size: .8rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .9rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.chip .mono { color: var(--muted); font-size: .8rem; margin-left: 4px; }
+.selinfo { margin-top: 16px; color: var(--muted); font-size: .9rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.actions.sticky { position: sticky; bottom: 0; background: var(--bg); padding: 12px 0 max(8px, env(safe-area-inset-bottom, 0px)); margin-top: 0; border-top: 1px solid var(--line); }
+.btn { font: inherit; font-weight: 600; font-size: .95rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 18px; cursor: pointer; min-height: 44px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); font-weight: 500; margin-left: auto; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:not(:disabled):hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.msg { margin-top: 12px; font-size: .9rem; color: var(--warn); }
+.hist, .doms { list-style: none; margin: 0; padding: 0; }
+.hist li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: .9rem; flex-wrap: wrap; }
+.hist li:first-child { border-top: 0; }
+.okc { color: var(--ok); } .badc { color: var(--bad); }
+details > summary { cursor: pointer; font-weight: 600; }
+textarea { width: 100%; font-family: var(--mono); font-size: .85rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; }
+.code { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: .8rem; overflow-x: auto; margin: 12px 0 0; white-space: pre; }
+
+.qhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: .9rem; }
+.tag { font-size: .78rem; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; }
+.timer { font-weight: 500; }
+.timer.low { color: var(--bad); }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.bar.sm { height: 6px; grid-column: 1 / -1; }
+.bar i.g { background: var(--ok); } .bar i.r { background: var(--bad); }
+.prompt { font-size: 1.05rem; line-height: 1.55; max-width: 70ch; }
+.notei { margin-top: 10px; font-size: .85rem; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; }
+.hint { margin-top: 12px; font-size: .9rem; color: var(--muted); }
+.opts { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.opt { font: inherit; text-align: left; display: flex; gap: 12px; align-items: flex-start; width: 100%; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; cursor: pointer; min-width: 0; }
+.opt .ltr { flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 6px; font-size: .8rem; color: var(--muted); }
+.opt .otx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt.sel .ltr { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opt.ok { border-color: var(--ok); background: var(--ok-soft); }
+.opt.bad { border-color: var(--bad); background: var(--bad-soft); }
+.opt.used { opacity: .45; }
+.opt:disabled { cursor: default; }
+.opt .mk, .fld .mk { font-size: .78rem; font-weight: 600; flex: none; }
+.opt.ok .mk, .fld.ok .mk { color: var(--ok); } .opt.bad .mk, .fld.bad .mk { color: var(--bad); }
+.flds { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.fld { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.fld.ok { border-color: var(--ok); background: var(--ok-soft); } .fld.bad { border-color: var(--bad); background: var(--bad-soft); }
+.fld label { font-weight: 600; overflow-wrap: anywhere; }
+select { font: inherit; width: 100%; min-height: 44px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.seq { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.seq .empty { color: var(--muted); font-size: .9rem; padding: 8px 0; }
+.fb { border-radius: 10px; padding: 16px 20px; border: 1px solid; display: flex; flex-direction: column; gap: 10px; }
+.fb.okb { background: var(--ok-soft); border-color: var(--ok); }
+.fb.badb { background: var(--bad-soft); border-color: var(--bad); }
+.verdict { font-weight: 700; }
+.okb .verdict { color: var(--ok); } .badb .verdict { color: var(--bad); }
+.exp { overflow-wrap: anywhere; font-size: .95rem; }
+.why { max-width: 70ch; }
+.rev { font-size: .9rem; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 8px 12px; }
+.pct { font-size: .6em; margin-left: 8px; }
+.doms li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 8px 0; font-size: .95rem; }
+.rv { border-top: 1px solid var(--line); padding: 10px 0; }
+.rv:first-of-type { border-top: 0; }
+.rv summary { display: flex; gap: 10px; font-weight: 500; align-items: flex-start; }
+.rv summary > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.rv .st { flex: none; font-weight: 700; width: 48px; }
+.rv > p { margin-top: 10px; padding-left: 58px; }
+@media (max-width: 480px) { .rv > p { padding-left: 0; } .btn.quiet { margin-left: 0; } }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width .25s ease; } }
+</style>
+<div class="wrap"><main id="app"></main></div>
+<script>
+var DOMAINS = ["Identité & accès", "Réseau & Zero Trust", "Opérations de sécurité", "Données & stockage", "DevSecOps & conteneurs", "Gouvernance & multicloud"];
+var D_ID = DOMAINS[0], D_NET = DOMAINS[1], D_OPS = DOMAINS[2], D_DATA = DOMAINS[3], D_DEV = DOMAINS[4], D_GOV = DOMAINS[5];
+var YN = ["Yes", "No"];
+
+var BANK = [
+  {
+    id: "q01", domain: D_OPS, type: "fields",
+    q: "You are designing an auditing solution for Azure landing zones containing SQL audit logs (Azure SQL databases), Windows Security logs (Azure VMs) and App Service audit logs. The centralized logging solution must log all privileged access, retain logs for at least 365 days and minimize costs. What should you recommend for each log type?",
+    fields: [
+      { label: "For the SQL audit logs", options: ["A Log Analytics workspace", "Azure Application Insights", "Microsoft Defender for SQL", "Microsoft Sentinel"], answer: 0 },
+      { label: "For the Security logs", options: ["A Log Analytics workspace", "Application Insights", "Microsoft Defender for servers", "Microsoft Sentinel"], answer: 0 },
+      { label: "For the App Service audit logs", options: ["A Log Analytics workspace", "Application Insights", "Microsoft Defender for App Service", "Microsoft Sentinel"], answer: 0 }
+    ],
+    why: "Un espace de travail Log Analytics centralise les trois sources (paramètres de diagnostic, agent Azure Monitor) et sa rétention se règle au-delà de 365 jours. Sentinel et les plans Defender ajoutent des coûts de détection que l'énoncé ne demande pas."
+  },
+  {
+    id: "q02", domain: D_OPS, type: "multi",
+    q: "A customer plans to deploy Microsoft Sentinel. Servers in the perimeter network cannot connect directly to the internet. The security operations team must access the security logs and the operations logs. The IT operations team must access only the operations logs, including the event logs of the perimeter servers. Which two configurations can you include? Each correct answer presents a complete solution.",
+    options: ["Configure Azure AD Conditional Access policies.", "Use the Azure Monitor agent with the multi-homing configuration.", "Implement resource-based role-based access control (RBAC) in Microsoft Sentinel.", "Create a custom collector that uses the Log Analytics agent."],
+    answer: [1, 2],
+    why: "Le multi-homing envoie les journaux d'exploitation vers un espace de travail distinct accessible à l'équipe IT, et le RBAC basé sur les ressources limite ce que chaque équipe voit. L'accès conditionnel contrôle l'authentification, pas l'accès aux tables de logs."
+  },
+  {
+    id: "q03", domain: D_OPS, type: "fields",
+    q: "Microsoft 365 Defender and Microsoft Defender for Cloud are enabled. A Microsoft Sentinel workspace has data connectors for Microsoft 365, Microsoft 365 Defender, Defender for Cloud and Azure. You plan to deploy Azure VMs running Windows Server. How should you enable EDR and SOAR capabilities for Microsoft Sentinel?",
+    fields: [
+      { label: "EDR", options: ["Add a Microsoft Sentinel data connector for Azure Active Directory (Azure AD).", "Add a Microsoft Sentinel data connector for Microsoft Defender for Cloud Apps.", "Onboard the servers to Azure Arc.", "Onboard the servers to Defender for Cloud."], answer: 3 },
+      { label: "SOAR", options: ["Configure Microsoft Sentinel analytics rules.", "Configure Microsoft Sentinel playbooks.", "Configure regulatory compliance standards in Defender for Cloud.", "Configure workflow automation in Defender for Cloud."], answer: 1 }
+    ],
+    why: "Defender for Cloud déploie Defender for Endpoint sur les VM (EDR), et ses données remontent déjà dans Sentinel. Arc ne sert que pour des serveurs hors Azure. Le SOAR de Sentinel repose sur les playbooks (Logic Apps)."
+  },
+  {
+    id: "q04", domain: D_GOV, type: "single",
+    q: "You have an Azure subscription with Microsoft Defender for Cloud enabled. You need to enforce ISO 27001:2013 standards for new resources deployed to the subscription. The solution must ensure that noncompliant resources are automatically detected. What should you use?",
+    options: ["Azure Blueprints", "The regulatory compliance dashboard in Defender for Cloud", "Azure role-based access control (Azure RBAC)", "Azure Policy"],
+    answer: 3,
+    why: "Azure Policy applique l'initiative ISO 27001 et évalue en continu les ressources, nouvelles comme existantes. Le tableau de bord de conformité n'est que la vue qui affiche les résultats de Policy."
+  },
+  {
+    id: "q05", domain: D_OPS, type: "fields",
+    q: "MSW1 is a Microsoft Sentinel workspace with 50 scheduled analytics rules. You design a SOAR solution with Sentinel playbooks. Expiration dates must be configurable when a playbook runs, and the administrative effort to configure individual analytics rules must be minimized. What should you use to invoke the playbooks, and which trigger type?",
+    fields: [
+      { label: "Use", options: ["Analytics rules", "Automation rules", "Investigation graphs"], answer: 1 },
+      { label: "Trigger type", options: ["Alert", "Entity", "Incident"], answer: 2 }
+    ],
+    why: "Une règle d'automatisation s'applique à plusieurs règles d'analyse à la fois et accepte une date d'expiration. Elle se déclenche sur les incidents."
+  },
+  {
+    id: "q06", domain: D_OPS, type: "fields",
+    q: "An Azure application gateway uses Azure WAF. You deploy new App Services web apps, each registered automatically in the company DNS domain and accessible from the Internet. Which solution detects vulnerability scans of the apps, and which detects whether newly deployed apps are vulnerable to attack?",
+    fields: [
+      { label: "To detect vulnerability scans of the apps", options: ["Azure WAF", "Microsoft Defender External Attack Surface Management (Defender EASM)", "Microsoft Defender for App Service", "Microsoft Defender for Cloud Apps"], answer: 2 },
+      { label: "To detect whether newly deployed apps are vulnerable to attack", options: ["Azure WAF", "Microsoft Defender External Attack Surface Management (Defender EASM)", "Microsoft Defender for App Service", "Microsoft Defender for Cloud Apps"], answer: 1 }
+    ],
+    why: "Defender for App Service analyse les requêtes web des applications protégées et peut signaler du balayage. Defender EASM découvre en continu les ressources exposées sur Internet, y compris celles qui apparaissent dans le DNS après un déploiement.",
+    rev: "J'avais d'abord répondu Defender EASM pour les deux champs. Ma recherche n'a pas retrouvé l'alerte exacte de détection de balayage dans la documentation. Vérifiez la première réponse avant de la retenir."
+  },
+  {
+    id: "q07", domain: D_OPS, type: "fields",
+    q: "You need a Microsoft 365 Defender solution that identifies users downloading an unusually high number of files from SharePoint Online (possible data exfiltration) and blocks Microsoft Teams messages containing potentially malicious content by using zero-hour auto purge (ZAP).",
+    fields: [
+      { label: "Identify data exfiltration attempts", options: ["Microsoft Defender for Cloud Apps", "Microsoft Defender for Endpoint", "Microsoft Defender for Identity", "Microsoft Defender for Office 365"], answer: 0 },
+      { label: "Block Teams messages", options: ["Microsoft Defender for Cloud Apps", "Microsoft Defender for Endpoint", "Microsoft Defender for Identity", "Microsoft Defender for Office 365"], answer: 3 }
+    ],
+    why: "Defender for Cloud Apps contient la politique de détection d'anomalies sur les téléchargements inhabituels. ZAP, y compris pour Teams, relève de Defender for Office 365."
+  },
+  {
+    id: "q08", domain: D_GOV, type: "fields",
+    q: "Three Microsoft Entra tenants (Tenant1 to Tenant3) each have a subscription (Sub1 to Sub3) containing one Sentinel workspace (Sentinel1 to Sentinel3, one per tenant). Users in Tenant1 must manage resources in Sub2 and Sub3 without switching subscriptions or signing in to another tenant. You must implement the multiple workspace view for Sentinel2 and Sentinel3. What delegates permissions, and what will users manage in the multiple workspace view?",
+    note: "Les options des deux listes sont reconstituées : comparez-les à l'énoncé d'origine.",
+    fields: [
+      { label: "Delegate permissions with", options: ["Azure Lighthouse", "Azure Policy", "Microsoft Entra Privileged Identity Management", "Azure Blueprints"], answer: 0 },
+      { label: "Feature managed in multiple workspace view", options: ["Incidents", "Workbooks", "Analytics rules", "Playbooks"], answer: 0 }
+    ],
+    why: "Azure Lighthouse délègue la gestion entre tenants sans changer de contexte. La vue multi-espaces de travail de Sentinel sert à gérer les incidents de plusieurs espaces de travail dans une seule liste.",
+    rev: "J'avais répondu « Workbooks » pour la seconde liste. La vue multi-espaces de travail est décrite par Microsoft pour les incidents. Confirmez avec les options réelles de l'énoncé."
+  },
+  {
+    id: "q09", domain: D_DEV, type: "single",
+    q: "You plan to deploy multiple containerized microservice-based apps to Azure Kubernetes Service (AKS). The solution must manage secrets, provide encryption, secure service-to-service communication by using mTLS encryption and minimize administrative effort. What should you include?",
+    options: ["Flux", "Envoy", "Dapr", "Istio"],
+    answer: 2,
+    why: "Dapr couvre les quatre exigences : bloc de gestion des secrets, mTLS automatique entre services et extension AKS gérée. Istio fournit le mTLS mais pas la gestion des secrets applicatifs.",
+    rev: "J'avais répondu Istio. L'exigence « gère les secrets » penche vers Dapr, mais je n'ai pas pu confirmer la réponse officielle. À vérifier."
+  },
+  {
+    id: "q10", domain: D_ID, type: "single",
+    q: "You have a multicloud environment that contains Azure, Amazon Web Services (AWS) and Google Cloud Platform (GCP) subscriptions. You need to discover and review role assignments across the subscriptions. What should you use?",
+    options: ["Microsoft Entra Permissions Management", "Microsoft Defender for Identity", "Azure Lighthouse", "Microsoft Entra ID Governance"],
+    answer: 0,
+    why: "Entra Permissions Management est la solution CIEM qui couvre Azure, AWS et GCP. Lighthouse reste limité à Azure et Entra ID Governance à l'identité Entra."
+  },
+  {
+    id: "q11", domain: D_DATA, type: "fields",
+    q: "You plan to implement Azure Synapse Analytics SQL dedicated pools and SQL serverless pools. You need additional encryption-at-rest security for each type of pool, using customer-managed keys whenever possible.",
+    fields: [
+      { label: "Serverless SQL pool", options: ["Azure Storage infrastructure encryption and Microsoft-managed keys", "Transparent Data Encryption (TDE) and customer-managed keys", "Transparent Data Encryption (TDE) and Microsoft-managed keys"], answer: 0 },
+      { label: "Dedicated SQL pool", options: ["Azure Storage infrastructure encryption and Microsoft-managed keys", "Transparent Data Encryption (TDE) and customer-managed keys", "Transparent Data Encryption (TDE) and Microsoft-managed keys"], answer: 1 }
+    ],
+    why: "Le pool dédié accepte TDE avec une clé gérée par le client. Le pool serverless n'offre pas cette option : on y ajoute le chiffrement d'infrastructure du stockage, avec des clés gérées par Microsoft."
+  },
+  {
+    id: "q12", domain: D_NET, type: "single",
+    q: "You have an on-premises app named App1 that remote users access by using VPN connections, and a third-party SaaS app named App2. You need to deploy Global Secure Access to manage access to App1 and App2. What should you use for each app?",
+    options: ["Microsoft Entra Private Access for App1 and Microsoft Entra Internet Access for App2", "Microsoft Entra Private Access for App1 and App2", "Microsoft Entra Internet Access for App1 and App2", "Microsoft Entra Private Access for App2 and Microsoft Entra Internet Access for App1"],
+    answer: 0,
+    why: "Private Access remplace le VPN pour les applications privées. Internet Access sécurise le trafic vers Internet et les applications SaaS."
+  },
+  {
+    id: "q13", domain: D_NET, type: "single",
+    q: "Several NSGs contain rules that allow direct RDP access to virtual machines, bypassing the Azure Bastion host bastion1. You need to ensure the VMs can be accessed only by using bastion1, and prevent NSG rules from bypassing it. What should you include?",
+    options: ["Azure Virtual Network Manager connectivity configurations", "Azure Virtual Network Manager security admin rules", "Azure Firewall application rules", "Azure Firewall network rules"],
+    answer: 1,
+    why: "Les règles d'administrateur de sécurité d'Azure Virtual Network Manager ont priorité sur les règles NSG locales, qui ne peuvent donc pas les contourner."
+  },
+  {
+    id: "q14", domain: D_NET, type: "fields",
+    q: "You have a Microsoft 365 E5 subscription and plan to deploy Global Secure Access universal tenant restrictions v2. Which authentication plane resources and which data plane resources will be protected?",
+    fields: [
+      { label: "Authentication plane resources", options: ["All Microsoft Entra ID integrated apps, including third-party apps", "All Microsoft 365 apps", "Microsoft SharePoint Online and Exchange Online only"], answer: 0 },
+      { label: "Data plane resources", options: ["All Microsoft Entra ID integrated apps, including third-party apps", "All Microsoft 365 apps", "Microsoft SharePoint Online and Exchange Online only"], answer: 1 }
+    ],
+    why: "La restriction au niveau de l'authentification s'applique à toutes les applications protégées par Entra ID. La protection du plan de données est plus étroite.",
+    rev: "La page de documentation que j'ai consultée confirme la portée du plan d'authentification, mais pas celle du plan de données. Votre capture proposait « SharePoint Online and Exchange Online only » : à trancher avec la source de l'énoncé."
+  },
+  {
+    id: "q15", domain: D_DATA, type: "order",
+    q: "RG1 contains multiple Azure Files shares. You must deploy a backup solution that prevents the deletion of backups and of the vault, prevents privilege escalation attacks against the backup solution and prevents modification of the backup retention period. Which three actions should you recommend, in sequence?",
+    options: ["Create an Azure Backup vault.", "From RG1, create a resource lock.", "Create a Recovery Services vault.", "Enable vault immutability.", "Lock immutability for the vault."],
+    answer: [2, 3, 4],
+    why: "La sauvegarde des partages Azure Files passe par un Recovery Services vault. On active ensuite l'immuabilité, puis on la verrouille pour qu'aucun compte, même privilégié, ne puisse la désactiver.",
+    rev: "Correction : j'avais écrit qu'il fallait un Azure Backup vault. Pour Azure Files, c'est le Recovery Services vault. Le schéma comparatif des deux coffres que je vous avais montré contenait la même erreur."
+  },
+  {
+    id: "q16", domain: D_NET, type: "fields",
+    q: "VNet1 contains Subnet1 and Subnet2. VM1 runs App1 and is connected to Subnet1. DB1 is an Azure SQL Database that contains data for App1 and is accessible from the internet. Only the virtual machines connected to Subnet1 must be able to connect to DB1, DB1 must be inaccessible from the internet and costs must be minimized.",
+    fields: [
+      { label: "To ensure that only VM1 can access DB1", options: ["A private endpoint", "Azure Application Gateway", "Azure Private Link"], answer: 0 },
+      { label: "To enforce network security restrictions for DB1", options: ["Azure Firewall rules", "Network security groups (NSGs)", "Virtual network rules"], answer: 1 }
+    ],
+    why: "Un point de terminaison privé donne à DB1 une adresse IP privée dans le VNet et permet de couper l'accès public. Les NSG sont gratuits, contrairement à Azure Firewall."
+  },
+  {
+    id: "q17", domain: D_DATA, type: "fields",
+    q: "You plan to deploy a storage account named storage1 that will store confidential data. You will assign tags to the confidential data. Access to storage1 must be definable by using the assigned tags. Which authorization mechanism should you enable, and which type of resource should you use?",
+    fields: [
+      { label: "Authorization mechanism", options: ["Access control list (ACL)", "Attribute-based access control (ABAC)", "Shared access signature (SAS)"], answer: 1 },
+      { label: "Resource type", options: ["Blob", "File", "Table"], answer: 0 }
+    ],
+    why: "L'ABAC d'Azure Storage évalue des conditions sur les étiquettes d'index des blobs. Cette fonction est propre au stockage Blob."
+  },
+  {
+    id: "q18", domain: D_NET, type: "fields",
+    q: "The New York office contains an on-premises app named App1. You manage access to App1 for users in the Los Angeles office with Microsoft Entra Private Access. You provision an ExpressRoute circuit from the New York office to the closest peering location, create VNet1 in East US and deploy an application proxy connector to VNet1. The solution must maximize redundancy, minimize latency, minimize complexity and minimize costs.",
+    fields: [
+      { label: "To optimize the connection between the users and the application proxy, deploy", options: ["A connector to the default connector group and a connector to a new connector group", "Two connectors to the default connector group", "Two new connector groups that each contain a new connector"], answer: 1 },
+      { label: "To optimize the connection between the connector and App1, use", options: ["ExpressRoute with Microsoft peering", "ExpressRoute with Microsoft peering and the premium add-on", "ExpressRoute with private peering"], answer: 2 }
+    ],
+    why: "Deux connecteurs dans le même groupe assurent la redondance sans complexité. Le connecteur dans VNet1 atteint App1, une ressource privée, par le peering privé d'ExpressRoute. Le peering Microsoft sert à joindre des services Microsoft publics.",
+    rev: "J'avais répondu « Microsoft peering » pour la seconde liste, avec un raisonnement erroné. Le peering privé relie un VNet à un réseau sur site. Dites-moi si votre source indique autre chose."
+  },
+  {
+    id: "q19", domain: D_DEV, type: "fields",
+    q: "Azure apps are managed by CI/CD pipelines in Azure DevOps. You need to recommend DevSecOps controls for the Commit the code and the Build and test stages, based on the Microsoft Cloud Adoption Framework for Azure. Which testing method for each stage?",
+    fields: [
+      { label: "Commit the code", options: ["Dynamic application security testing (DAST)", "Penetration testing", "Smoke testing", "Static application security testing (SAST)"], answer: 3 },
+      { label: "Build and test", options: ["Dynamic application security testing (DAST)", "Penetration testing", "Smoke testing", "Static application security testing (SAST)"], answer: 0 }
+    ],
+    why: "Le SAST analyse le code source dès le commit, sans l'exécuter. Le DAST attaque l'application en cours d'exécution, ce qui suppose une étape de build et de test."
+  },
+  {
+    id: "q20", domain: D_DEV, type: "fields",
+    q: "Match each AKS deployment task to the DevSecOps lifecycle stage.",
+    note: "Les options de la liste sont reconstituées à partir des phases visibles sur la capture.",
+    fields: [
+      { label: "Apply Azure Well-Architected Framework (WAF)", options: ["Plan phase", "Develop phase", "Build phase", "Operate phase"], answer: 0 },
+      { label: "Secure container images", options: ["Plan phase", "Develop phase", "Build phase", "Operate phase"], answer: 1 },
+      { label: "Build new images on base image updates", options: ["Plan phase", "Develop phase", "Build phase", "Operate phase"], answer: 2 },
+      { label: "Keep deployment credentials secure", options: ["Plan phase", "Develop phase", "Build phase", "Operate phase"], answer: 3 },
+      { label: "Update Kubernetes clusters", options: ["Plan phase", "Develop phase", "Build phase", "Operate phase"], answer: 3 }
+    ],
+    why: "Le WAF cadre la conception (Plan). La sécurité des images se travaille avec le code (Develop). La reconstruction sur mise à jour de l'image de base est une automatisation de pipeline (Build). Les secrets de déploiement et les mises à jour de clusters relèvent de l'exploitation (Operate)."
+  },
+  {
+    id: "q21", domain: D_DEV, type: "fields",
+    q: "A payment processing system hosted on Azure web apps suffered a breach that exploited a well-known vulnerability in Linux. You recommend migrating workloads such as payment and notification APIs to Azure Functions. For each statement, select Yes if it is true. Otherwise, select No.",
+    fields: [
+      { label: "The company is not required to manage infrastructure for the APIs.", options: YN, answer: 0 },
+      { label: "The company's app secrets are stored in highly-secure Hardware Security Modules (HSMs).", options: YN, answer: 1 },
+      { label: "The company can deploy API workloads using hardened containers.", options: YN, answer: 1 },
+      { label: "The company's web assets are stored on content delivery networks (CDNs), not on virtual machine (VM) instances.", options: YN, answer: 0 },
+      { label: "The company only pays for resources when code is being executed.", options: YN, answer: 0 }
+    ],
+    why: "Avec Functions (plan Consommation), Microsoft gère le système d'exploitation et la facturation suit l'exécution. Functions n'impose ni HSM ni conteneurs durcis : ces éléments dépendent de Key Vault Premium ou d'AKS."
+  },
+  {
+    id: "q22", domain: D_DEV, type: "fields",
+    q: "A security audit recommended using DevSecOps when developing and deploying AKS. DevA is responsible for writing the application code, DevB for building containers, DevC for creating and selecting Azure Policies. Which DevSecOps team role matches each user's job description?",
+    note: "La liste d'options est partiellement reconstituée.",
+    fields: [
+      { label: "DevA", options: ["Developer", "Application operator", "Cluster operator", "Security team"], answer: 0 },
+      { label: "DevB", options: ["Developer", "Application operator", "Cluster operator", "Security team"], answer: 1 },
+      { label: "DevC", options: ["Developer", "Application operator", "Cluster operator", "Security team"], answer: 3 }
+    ],
+    why: "Le développeur écrit le code, l'opérateur d'application construit et déploie les conteneurs, et l'équipe de sécurité définit les politiques. L'opérateur de cluster administre l'infrastructure AKS."
+  },
+  {
+    id: "q23", domain: D_ID, type: "multi",
+    q: "CompanyA is an online e-tailer that acquired several boutique clothing manufacturers and wants to consolidate on-premises and cloud resources in Azure. You need to recommend a solution for securely deploying IoT sensors. Which three forms of attestation should you include for confirming each sensor's identity? Each correct answer presents a complete solution.",
+    options: ["Password hashes", "X.509 certificates", "Trusted Platform Module (TPM)", "Multi-factor Authentication (MFA)", "Symmetric keys", "Biometrics"],
+    answer: [1, 2, 4],
+    why: "Le service de provisionnement d'appareils (DPS) d'Azure IoT Hub accepte trois mécanismes d'attestation : certificats X.509, TPM et clés symétriques. Le MFA et la biométrie supposent une personne."
+  },
+  {
+    id: "q24", domain: D_ID, type: "single",
+    q: "A company wants to improve its security posture by implementing Microsoft Entra ID Protection. You need to determine the minimum license level to activate user risk and sign-in risk policies, and the solution should minimize costs. Which licensing option should you use?",
+    options: ["Microsoft Entra ID P2", "EMS E5", "Microsoft Entra ID Free", "Microsoft Entra ID P1", "Office 365 E3"],
+    answer: 0,
+    why: "Les politiques de risque utilisateur et de risque de connexion exigent Entra ID P2. EMS E5 l'inclut mais coûte davantage, et P1 n'offre pas les signaux de risque."
+  },
+  {
+    id: "q25", domain: D_GOV, type: "fields",
+    q: "You use Microsoft Defender for Cloud to evaluate the security posture of Azure deployments. Which Secure Score component will each recommendation improve?",
+    note: "La liste d'options est partielle : seules deux valeurs étaient visibles sur la capture.",
+    fields: [
+      { label: "Configure services to listen only on allowed ports", options: ["Secure management ports", "Restrict unauthorized network access"], answer: 1 },
+      { label: "Implement JIT access control", options: ["Secure management ports", "Restrict unauthorized network access"], answer: 0 },
+      { label: "Place VMs in NSGs", options: ["Secure management ports", "Restrict unauthorized network access"], answer: 1 },
+      { label: "Protect VNets with Azure Firewall", options: ["Secure management ports", "Restrict unauthorized network access"], answer: 1 }
+    ],
+    why: "L'accès juste-à-temps protège les ports d'administration (RDP, SSH). Le filtrage réseau en général (NSG, pare-feu, ports autorisés) relève de la restriction des accès réseau non autorisés."
+  },
+  {
+    id: "q26", domain: D_NET, type: "single",
+    q: "A company hosts VM-based file, web and database servers in Azure. Employees accessing a general file server also have access to other servers that host sensitive information. Rather than deploying new permission schemes, you want a network design aligned with Zero Trust (Servers and Clients in separate protected segments of one VNet). The design must limit user access to corporate file servers, isolate other server workloads, implement software-defined perimeters and reduce administrative overhead. Which solution should you recommend?",
+    options: ["The company should place each VM in an isolated VNet.", "The company should require a VPN for server access.", "The company should deploy VMs behind a jump box.", "The company should implement micro-segmentation."],
+    answer: 3,
+    why: "La micro-segmentation isole les charges de travail par segments avec des règles définies par logiciel (NSG, ASG, pare-feu), sans multiplier les VNet ni refondre les permissions."
+  },
+  {
+    id: "q27", domain: D_ID, type: "single",
+    q: "You are designing a solution for a containerized application running in a Kubernetes cluster. The application needs to securely access an Azure Key Vault to retrieve secrets, in alignment with Microsoft best practices. What is the most appropriate approach?",
+    options: ["Create a Microsoft Entra ID user account and use it to authenticate to Azure Key Vault.", "Configure a Microsoft Entra workload identity and let the application authenticate directly with Azure Key Vault.", "Configure a managed identity for the Kubernetes cluster and grant it access to Azure Key Vault.", "Use a self-signed certificate stored in the application's container and authenticate with Azure Key Vault."],
+    answer: 1,
+    why: "Workload Identity donne une identité propre à chaque application, sans secret stocké. L'identité managée du cluster est partagée par tous les pods, ce qui viole le moindre privilège."
+  },
+  {
+    id: "q28", domain: D_OPS, type: "fields",
+    q: "You need a solution that controls data travel and identifies application risks before they lead to data loss. Which Defender for Cloud Apps component should you use for each requirement?",
+    fields: [
+      { label: "To prevent the downloading of sensitive documents on unmanaged devices", options: ["Anomaly detection policy", "Cloud Discovery", "Conditional Access App Control", "Data encryption policy"], answer: 2 },
+      { label: "To create an app risk report based on uploaded firewall logs", options: ["Anomaly detection policy", "Cloud Discovery", "Conditional Access App Control", "Data encryption policy"], answer: 1 },
+      { label: "To identify logons to an account that may indicate impossible travel", options: ["Anomaly detection policy", "Cloud Discovery", "Conditional Access App Control", "Data encryption policy"], answer: 0 }
+    ],
+    why: "Conditional Access App Control bloque des actions pendant la session (téléchargement). Cloud Discovery analyse des journaux réseau pour noter les applications. La politique de détection d'anomalies repère le déplacement impossible."
+  },
+  {
+    id: "q29", domain: D_ID, type: "multi",
+    q: "A company wants to implement Microsoft Defender for Identity. What two types of servers could the sensors be directly installed on? Each correct answer presents a complete solution.",
+    options: ["Any non-domain controller with an instance of Windows Server 2016 or newer", "Domain controllers", "An Active Directory Federation Services (AD FS) server", "A RADIUS server"],
+    answer: [1, 2],
+    why: "Le capteur s'installe sur les serveurs d'identité : contrôleurs de domaine et serveurs AD FS (ainsi qu'AD CS et Entra Connect). Un serveur membre quelconque ou un serveur RADIUS ne convient pas."
+  },
+  {
+    id: "q30", domain: D_ID, type: "multi",
+    q: "Your company has a Microsoft Entra ID P2 license. An Exchange Online administrator used a permanent role assignment to export mailbox data. Management wants all role assignments to comply with Zero Trust. You design a Microsoft Entra Privileged Identity Management (PIM) solution. Which two statements should you include? Each correct answer presents part of the solution.",
+    options: ["Permanent role assignments are required for privileged Microsoft Entra tasks.", "Role activation can require justification or approval, but not both.", "Active role assignment creation can be configured to require Multi-factor Authentication (MFA).", "Active role assignments require at least one activation step prior to use.", "Permanent role assignments should be configured as eligible."],
+    answer: [2, 4],
+    why: "Le MFA se configure pour la création d'une attribution active, et les attributions permanentes doivent devenir éligibles. Une attribution active s'utilise sans activation : c'est l'attribution éligible qui exige une activation."
+  },
+  {
+    id: "q31", domain: D_GOV, type: "multi",
+    q: "Your organization manages resources across hybrid and multicloud environments, including on-premises servers, Kubernetes clusters, and AWS and Google Cloud. You need to design a solution using Azure Arc to enable unified management and governance. Which two actions best utilize Azure Arc? Each correct answer presents a complete solution.",
+    options: ["Deploy and manage containerized applications across Kubernetes clusters.", "Seamlessly migrate all workloads to Azure to maintain governance.", "Restrict resource management to Azure-native workloads only.", "Automatically scale virtual machines in AWS using Azure Resource Manager.", "Enable Azure Policy for compliance management on non-Azure resources."],
+    answer: [0, 4],
+    why: "Arc étend la gouvernance Azure (Policy, GitOps, Defender) aux ressources hors Azure sans les migrer. La mise à l'échelle des VM AWS reste gérée par AWS."
+  },
+  {
+    id: "q32", domain: D_DATA, type: "single",
+    q: "You plan to migrate DB1 to Azure. You need an encrypted Azure database solution that minimizes the risks of malware using elevated privileges to access sensitive data, prevents database administrators from accessing sensitive data, enables pattern matching for server-side operations, supports Microsoft Azure Attestation and uses hardware-based encryption. What should you recommend?",
+    options: ["SQL Server on Azure Virtual Machines with virtualization-based security (VBS) enclaves", "Azure SQL Database with virtualization-based security (VBS) enclaves", "Azure SQL Managed Instance that has Always Encrypted configured", "Azure SQL Database with Intel Software Guard Extensions (Intel SGX) enclaves"],
+    answer: 3,
+    why: "Always Encrypted avec enclaves permet le filtrage par motif côté serveur. SGX est matériel et exige l'attestation Azure Attestation, alors que les enclaves VBS sont logicielles et sans attestation."
+  },
+  {
+    id: "q33", domain: D_DEV, type: "single",
+    q: "You plan to deploy 20 Azure Kubernetes Service (AKS) clusters. The cluster configuration will be managed declaratively by using Kubernetes manifest files stored in Azure Repos. You need to ensure that the configuration of all the clusters remains consistent by using the manifest files. What should you include?",
+    options: ["Gatekeeper", "Dependency Tracker", "Dependency", "Flux"],
+    answer: 3,
+    why: "Flux est l'outil GitOps qui synchronise en continu les manifestes d'un dépôt Git vers les clusters et corrige les dérives."
+  },
+  {
+    id: "q34", domain: D_GOV, type: "single",
+    q: "A Microsoft 365 tenant has 5,000 users with Microsoft 365 E5 licenses and the Microsoft Defender Vulnerability Management add-on, and 5,000 Windows 11 devices managed by Intune and Defender for Endpoint, configured at deployment to comply with CIS benchmarks. You need a compliance solution that identifies devices that were modified and no longer comply with the CIS benchmarks. What should you include?",
+    options: ["Authenticated scan for Windows in Microsoft Defender Vulnerability Management", "Microsoft Secure Score for Devices in Defender for Endpoint", "Attack surface reduction (ASR) rules in Defender for Endpoint", "Security baselines assessments in Microsoft Defender Vulnerability Management"],
+    answer: 3,
+    why: "Les évaluations de références de sécurité comparent la configuration réelle des appareils à des benchmarks comme CIS et signalent les dérives."
+  }
+];
+
+/* ===== Dump importé (partie A) : questions 2 à 59 du document ===== */
+function _id(e) { e.id = "q" + String(BANK.length + 1).padStart(2, "0"); BANK.push(e); }
+function S(d, q, o, a, why, x) { _id(Object.assign({ domain: d, type: "single", q: q, options: o, answer: a, why: why }, x || {})); }
+function M(d, q, o, a, why, x) { _id(Object.assign({ domain: d, type: "multi", q: q, options: o, answer: a, why: why }, x || {})); }
+function F(d, q, f, why, x) { _id(Object.assign({ domain: d, type: "fields", q: q, fields: f.map(function (r) { return { label: r[0], options: r[1], answer: r[2] }; }), why: why }, x || {})); }
+function Y(d, q, st, a, why, x) { _id(Object.assign({ domain: d, type: "fields", q: q, fields: st.map(function (s, i) { return { label: s, options: YN, answer: a[i] }; }), why: why }, x || {})); }
+function O(d, q, o, a, why, x) { _id(Object.assign({ domain: d, type: "order", q: q, options: o, answer: a, why: why }, x || {})); }
+var RECO = "Les choix des listes déroulantes ne sont pas visibles dans la capture : les mauvaises options sont reconstituées à partir de l'explication.";
+
+S(D_DATA, "A company stores sensitive data across multiple environments, including on-premises file servers and Azure-based storage accounts. You need to implement a solution to identify, classify, and protect this sensitive data to comply with regulatory requirements and minimize risks. What should you do?",
+  ["Deploy Microsoft Purview Data Loss Prevention (DLP) policies.", "Implement Microsoft Defender for Storage.", "Configure sensitivity labels in Microsoft Purview Information Protection.", "Enforce tagging by enabling Azure Policy."], 2,
+  "Les étiquettes de confidentialité (Purview Information Protection) servent à identifier, classifier et protéger les données, y compris sur serveurs de fichiers on-premises et stockage Azure. La DLP agit sur les données en cours d'usage ou de partage, Defender for Storage détecte les menaces sans classifier, et les tags Azure Policy ne concernent que les métadonnées de ressources.");
+
+S(D_NET, "Your organization has implemented defense in depth by deploying Microsoft Defender for Endpoint on Azure VMs and Azure Firewall between sensitive subnets. Due to a recent acquisition, employees now communicate with VMs that are not hosted in Azure. You need to improve detection by passively monitoring the traffic sent between VMs. Which technology or method should you recommend?",
+  ["Port mirror", "Sandbox", "Network Terminal Access Point (TAP)", "Micro-segmentation"], 2,
+  "Le virtual network TAP d'Azure duplique le trafic des interfaces réseau vers un collecteur (capture de paquets) pour analyse passive, sans interrompre les flux. Le port mirroring (SPAN) relève des commutateurs physiques, la sandbox exécute des fichiers suspects et la micro-segmentation cloisonne mais n'observe pas.");
+
+F(D_ID, "Your client, an online printing company, wants individual customers to sign up using popular social identity providers, manageable with user flows. You recommend Azure AD B2C. Which component should you include for each design element?",
+  [["Azure AD B2C account type used for individual customers", ["Consumer", "Guest", "Work"], 0],
+   ["Component required to register the company's web application", ["Redirect URIs", "Resource owner password credentials (ROPC) policy", "User flow"], 0]],
+  "Les clients particuliers sont des comptes Consumer. L'enregistrement de l'application web exige des Redirect URIs : ils indiquent où renvoyer la réponse d'authentification. Le flux ROPC est déconseillé et un user flow définit l'inscription/connexion, pas l'enregistrement de l'application.", { note: RECO });
+
+S(D_ID, "As part of your initiative to secure Active Directory, you implement the AdminSDHolder object to enforce consistent permissions on protected accounts Admin1 and Admin2. You move these accounts to their own OUs with delegated permissions, but the protected accounts do not inherit the new permissions. What is the likely cause?",
+  ["The accounts were removed from the Administrators group.", "The protected accounts are no longer part of the AdminSDHolder object.", "Permissions inheritance is disabled for protected accounts and groups.", "The accounts have been assigned too many administrative permissions."], 2,
+  "AdminSDHolder/SDProp réécrit périodiquement l'ACL des comptes protégés (Domain Admins, Enterprise Admins…) et désactive l'héritage pour garder un modèle strict. Déplacer ces comptes dans une nouvelle OU ne leur fait donc pas hériter des permissions déléguées.");
+
+M(D_ID, "Your company uses Microsoft Entra for authentication. To mitigate the risk of lost passwords you design a passwordless scheme. Environment: Windows 10/11 laptops (no additional hardware required), Android smartphones, iOS smartphones. Which two solutions should you recommend?",
+  ["Azure Storage SAS", "Windows Hello for Business", "Microsoft Authenticator app", "FIDO2 security keys", "Server PKI certificates"], [1, 2],
+  "Windows Hello for Business couvre les portables Windows sans matériel supplémentaire, et l'application Microsoft Authenticator couvre Android et iOS. Les clés FIDO2 sont des périphériques physiques à acheter, ce qui contredit l'exigence « no additional hardware ».");
+
+S(D_GOV, "On-premises VMs must be onboarded into your existing Azure Backup schedule (MARS agent). Server01 and Server02 run Windows Server 2022, Server03 and Server05 run CentOS, Server04 runs Windows Server (2018 per the capture), Server06 runs Debian. Which VMs can you onboard?",
+  ["Server03 and Server05", "Server01, Server02, and Server06", "Server01, Server02, and Server04", "Server01, Server02, Server03, Server04, Server05, and Server06"], 2,
+  "L'agent MARS ne prend en charge que Windows : seuls les serveurs Windows (Server01, 02 et 04) peuvent être sauvegardés. CentOS et Debian nécessitent une autre solution (Azure Backup Server / DPM ou sauvegarde de VM).",
+  { note: "La version exacte de Windows de Server04 est illisible sur la capture ; seule l'appartenance à la famille Windows compte ici." });
+
+S(D_OPS, "You are a security administrator who needs a list of potential security risks from external-facing assets such as websites, APIs and cloud services to understand your organization's exposure. You need a solution that discovers and assesses these assets. Which Azure service should you use?",
+  ["Microsoft Defender for Cloud", "Microsoft Sentinel", "Microsoft Defender for Office 365", "Microsoft Defender EASM"], 3,
+  "Defender External Attack Surface Management (EASM) cartographie en continu les actifs exposés sur Internet (domaines, IP, certificats, applications) et évalue leurs risques, du point de vue d'un attaquant externe.");
+
+S(D_OPS, "Your company recently adopted Microsoft Sentinel as its primary SIEM to enhance threat detection. You need to identify detection gaps and ensure the SOC has visibility across all potential attack stages. What should you do first?",
+  ["Enable all alerts for any techniques mapped to MITRE.", "Set up Notebooks to manually investigate MITRE-aligned incidents.", "Map existing Sentinel analytics rules to MITRE tactics.", "Create custom rules for MITRE techniques not covered by Sentinel."], 2,
+  "Il faut d'abord savoir ce qui est déjà couvert : la page MITRE ATT&CK de Sentinel affiche la couverture des règles existantes par tactique et technique. Ce n'est qu'ensuite qu'on crée des règles pour les trous identifiés.");
+
+S(D_GOV, "Your company acquired a subsidiary that processes protected health information (PHI) in an on-premises data center. You need a secure, compliant Azure architecture to host VMs and containers, with compliance assessable and enforceable on an ongoing basis. Which recommendation should you include?",
+  ["Minimize complexity by hardening nodes with a common configuration.", "Evaluate each component using a framework-based benchmark.", "Deploy and configure host-based firewalls on all VMs and containers.", "Install and configure EDR on each node."], 1,
+  "L'évaluation continue de chaque composant par rapport à un référentiel (benchmark basé sur un cadre réglementaire) permet de mesurer et de faire respecter la conformité dans la durée. Les autres options sont des mesures techniques ponctuelles, pas un processus de conformité.");
+
+S(D_ID, "An e-commerce company wants customers to sign in using social identity providers (Google, Facebook) and to customize the UI with the company's branding. You need to configure Azure AD B2C. What should you do?",
+  ["Use Azure AD B2C API connectors to integrate third-party services for validating social identities and customizing user data processing.", "Configure Azure AD B2C user flows to integrate social identity providers and customize the branding options using the Azure portal.", "Use Azure AD B2C custom policies to integrate social identity providers and apply branding options using HTML and CSS.", "Enable Conditional Access in Azure AD B2C to enforce additional security measures like MFA based on user risk."], 2,
+  "Les politiques personnalisées (custom policies) permettent d'intégrer les fournisseurs sociaux et de contrôler totalement l'interface via HTML/CSS. Les user flows n'autorisent qu'un branding de base (logo, couleurs) depuis le portail.");
+
+S(D_OPS, "You are a security engineer for an organization that recently deployed Microsoft Sentinel. Goals: reduce manual intervention, ensure swift remediation of known threats and minimize alert fatigue from recurring incidents. What should you do?",
+  ["Develop workflows using the Sentinel Notebooks feature.", "Configure threat intelligence sources for automated responses.", "Use playbooks in Sentinel to execute actions based on alert conditions.", "Set up alerts to notify the security team of all incidents."], 2,
+  "Les playbooks (Logic Apps) déclenchés par des règles d'automatisation exécutent automatiquement les réponses aux menaces connues, ce qui réduit le travail manuel et la fatigue d'alertes. Les notebooks servent à l'investigation, pas à l'automatisation.");
+
+M(D_DATA, "Your employees use Exchange Online to collaborate with customers, vendors and government agencies. Despite strict data access permissions, a security analyst discovers that personally identifiable information (PII) is still being sent by email. Which two actions should you include in your data exfiltration prevention solution?",
+  ["Create an Exchange discovery mailbox.", "Configure Azure Disk Encryption (ADE) and store keys in Key Vault.", "Create a custom sensitive information type in the Compliance center.", "Create a Data Loss Prevention (DLP) policy in Microsoft Purview.", "Configure Exchange clients to use S/MIME."], [2, 3],
+  "Un type d'information sensible personnalisé définit ce qu'est la PII à détecter, et la stratégie DLP Purview applique l'action (bloquer, alerter, chiffrer) sur les e-mails qui en contiennent. ADE protège des disques, la boîte de découverte sert à l'eDiscovery et S/MIME chiffre sans détecter la PII.");
+
+F(D_NET, "The company migrated its core REST APIs and websites to Azure IaaS with minimal IT staff. Requirements: web workloads must scale automatically based on load, REST APIs and websites must be protected from DDoS, and Azure DevOps integration must be supported. Which solutions should you implement?",
+  [["To host web workloads, support DevOps and minimize administrative overhead", ["Azure App Service", "Azure Functions", "Virtual machine scale sets"], 0],
+   ["To protect workloads from DDoS", ["Azure CDN", "Azure Functions", "Azure Front Door"], 0]],
+  "Azure App Service est un PaaS managé : montée en charge automatique, intégration Azure DevOps, peu d'administration. Le corrigé du dump retient Azure CDN pour la protection DDoS.",
+  { note: RECO, rev: "À vérifier : en pratique, la protection DDoS dédiée est Azure DDoS Protection (éventuellement via Front Door + WAF). Azure CDN n'atténue qu'indirectement. Si l'examen propose DDoS Protection, choisis-le." });
+
+F(D_NET, "Two web apps need high availability. finance-web-app requires layer 7 load balancing and SSL offloading. hr-web-app requires high availability and DNS-based load balancing. What solution should you recommend for each app?",
+  [["finance-web-app", ["Azure Application Gateway", "Azure Load Balancer", "Azure Traffic Manager"], 0],
+   ["hr-web-app", ["Azure Application Gateway", "Azure Load Balancer", "Azure Traffic Manager"], 2]],
+  "Application Gateway est un équilibreur de charge de couche 7 avec terminaison SSL. Traffic Manager répartit le trafic au niveau DNS entre des points de terminaison. Azure Load Balancer travaille en couche 4.");
+
+F(D_OPS, "A penetration test highlighted several security gaps. Which Microsoft native cloud service covers each gap?",
+  [["Identify, detect and investigate advanced threats to users and groups", ["Defender for Identity", "Defender for Office 365", "Defender for Cloud Apps", "Defender Vulnerability Management"], 0],
+   ["Safeguard against malicious threats posed by email messages", ["Defender for Identity", "Defender for Office 365", "Defender for Cloud Apps", "Defender Vulnerability Management"], 1],
+   ["Enable intelligent risk-based assessments of applications", ["Defender for Identity", "Defender for Office 365", "Defender for Cloud Apps", "Defender Vulnerability Management"], 2],
+   ["Enable asset visibility and intelligent assessment of multiple OS", ["Defender for Identity", "Defender for Office 365", "Defender for Cloud Apps", "Defender Vulnerability Management"], 3]],
+  "Defender for Identity surveille les identités AD, Defender for Office 365 protège la messagerie (phishing, liens, pièces jointes), Defender for Cloud Apps évalue le risque des applications cloud (CASB) et Defender Vulnerability Management offre la visibilité et l'évaluation des vulnérabilités multi-OS.");
+
+S(D_GOV, "You are a security architect for a company in a hybrid, multicloud environment. You need a solution that ensures unified security management, visibility and seamless integration of security policies across on-premises and cloud resources. Which solution should you recommend?",
+  ["Azure Monitor", "Azure Arc", "Microsoft Sentinel", "Microsoft Defender for Identity"], 1,
+  "Azure Arc projette les ressources hors Azure (on-premises, autres clouds) dans Azure Resource Manager, ce qui permet d'y appliquer Azure Policy, Defender for Cloud et la gouvernance de façon uniforme.");
+
+M(D_GOV, "Your organization applies the Zero Trust Rapid Modernization Plan (RaMP). The estate contains Identity (Azure AD), Endpoints (Intune), DevOps (Azure DevOps), IoT devices (Azure IoT) and Applications (Intune). Which three service types should you modernize as a priority?",
+  ["Endpoints", "DevOps", "Applications", "Identity", "IoT devices"], [0, 2, 3],
+  "Selon le corrigé du dump, les initiatives prioritaires de RaMP portent sur l'identité, les terminaux et les applications. DevOps et IoT viennent après.");
+
+M(D_ID, "Enabling security defaults produces a 26-point security posture increase. Which three actions are enabled when security defaults are turned on?",
+  ["Requiring administrators to use multifactor authentication", "Designating more than one Global Admin", "Using privileged admin roles", "Blocking legacy authentication protocols", "Requiring users to use multifactor authentication when necessary", "Enabling self-service password reset"], [0, 3, 4],
+  "Les paramètres de sécurité par défaut imposent l'inscription MFA, exigent la MFA des administrateurs, la MFA des utilisateurs si nécessaire, bloquent l'authentification héritée et protègent les actions privilégiées. Ils ne configurent ni SSPR ni la désignation de plusieurs Global Admin.");
+
+S(D_DATA, "All VDI VMs (Windows 11 Enterprise) are joined to Microsoft Entra ID. You need a tool that facilitates BitLocker deployment, does not require an agent to be installed and allows encryption to be managed at the OS level.",
+  ["Microsoft Endpoint Configuration Manager", "Azure Storage Server-Side Encryption", "Microsoft Defender for Storage", "Microsoft Intune"], 3,
+  "Intune gère BitLocker via des stratégies de sécurité des points de terminaison, sans agent supplémentaire pour des appareils joints à Entra ID. Configuration Manager exige son client, et le chiffrement côté serveur du stockage n'agit pas au niveau du système d'exploitation.");
+
+S(D_OPS, "You want to integrate Azure Automation Update Management with Microsoft Configuration Manager so security updates can be reported and pre-staged. Currently the updates are not received from Configuration Manager. What is a prerequisite before this can happen?",
+  ["Configuring the Windows Agent to communicate with Windows Server Update Service (WSUS)", "Giving the Windows Agent access to Microsoft Updates", "Hybrid-joining on-premises servers and end user devices", "Configuring Microsoft Configuration Manager to manage security updates"], 1,
+  "Le corrigé du dump retient l'accès de l'agent Windows à Microsoft Update.",
+  { rev: "À vérifier : la logique de la question est ambiguë (agent → WSUS vs Microsoft Update). Retiens la réponse du dump, mais ne la considère pas comme certaine." });
+
+S(D_OPS, "An organization wants to manage security updates for a hybrid environment of on-premises and cloud-based Windows devices: timely updates, minimal administrative workload, tailored update policies by location and usage. Which approach is best?",
+  ["Implement Configuration Manager exclusively for all devices, including those sporadically connected.", "Use a hybrid approach with Configuration Manager for on-premises and Intune for cloud-based devices.", "Use WSUS exclusively for both environments.", "Rely on Microsoft Intune for all devices across network locations."], 1,
+  "Configuration Manager reste adapté aux postes on-premises connectés, Intune aux appareils cloud ou intermittents : chaque groupe reçoit une stratégie adaptée à son contexte, avec moins de charge qu'un outil unique mal adapté.");
+
+S(D_GOV, "You enabled Microsoft Defender for Cloud on a new customer subscription and checked compliance with Azure CIS. Which task should you perform to evaluate the subscription's posture against ISO 27001?",
+  ["Publish the ISO 27001 blueprint in Azure Blueprints", "Add a standard in Microsoft Defender for Cloud.", "Enable enhanced security features for the subscription.", "Assign the Azure Security Benchmark to the subscription."], 1,
+  "Dans Defender for Cloud, on ajoute le standard ISO 27001 au tableau de bord de conformité réglementaire pour l'évaluer en continu. Blueprints applique des configurations, il n'évalue pas la posture.");
+
+M(D_ID, "You plan to use the Microsoft cloud security benchmark to protect identity and authentication systems. Which three common security controls should you implement?",
+  ["Enforce strong passwordless authentication.", "Use managed application identities.", "Restrict privileged roles and accounts.", "Monitor and audit high risk activities.", "Monitor and audit strong authentication for all privileged access."], [2, 3, 4],
+  "Le corrigé du dump retient : restreindre les rôles et comptes privilégiés, superviser/auditer les activités à risque et superviser l'authentification forte des accès privilégiés.",
+  { rev: "À vérifier : les intitulés correspondent mal à la numérotation officielle du benchmark ; on s'appuie ici sur les cases cochées dans le dump." });
+
+S(D_DATA, "Your company has a Microsoft 365 E5 subscription and must manage the keys Microsoft 365 uses to encrypt data at rest. What should you recommend first after completing prerequisites?",
+  ["Modify the Purview Service Encryption configuration.", "Use the Customer Key Onboarding Service.", "Import the company's keys into an Azure key vault.", "Generate keys and configure Double Key Encryption (DKE)."], 1,
+  "Customer Key s'active via le service d'intégration (onboarding) qui exécute les cmdlets PowerShell nécessaires. Les clés dans Key Vault et la configuration Purview viennent après cette étape.",
+  { note: "L'ordre des options est reconstitué (un intitulé est illisible dans la capture)." });
+
+S(D_DEV, "Patient health records are stored in Azure Storage and processed by custom mobile apps hosted on Azure App Service. Your cyber insurer requires proof of vulnerability mitigation. You need to identify the attack vectors a malicious actor may use to exploit your apps. Which process or tool should you use?",
+  ["Malware analysis", "Forensic analysis", "Regression testing", "Threat modeling"], 3,
+  "La modélisation des menaces (threat modeling) identifie les vecteurs d'attaque possibles sur une application avant qu'ils soient exploités. Les analyses de malware ou forensiques sont réactives et la non-régression teste la stabilité fonctionnelle.");
+
+S(D_GOV, "Your company plans to gradually migrate subsidiaries to Azure using landing zone architectures aligned with benchmarks such as ISO 27001, applicable at scale across multiple subscriptions. Which Azure capability should you use?",
+  ["Artifacts", "Access packages", "Azure Policy", "Azure Blueprints"], 3,
+  "Le dump retient Azure Blueprints (packages d'artefacts : rôles, policies, templates) pour déployer à grande échelle sur plusieurs abonnements avec des référentiels comme ISO 27001.",
+  { rev: "À vérifier : Azure Blueprints est annoncé comme déprécié (juillet 2026) au profit de Template Specs, Deployment Stacks et des accélérateurs de landing zone. Azure Policy seule applique des règles mais ne déploie pas l'environnement." });
+
+F(D_GOV, "You need continuous export of Defender for Cloud regulatory compliance data. Which export option should you recommend for each requirement?",
+  [["Export at the resource group level", ["Configure export by using the Azure portal", "Configure export by using Azure Policy", "Configure export by using the Defender REST API"], 2],
+   ["Export to Azure Logic Apps", ["Configure export by using the Azure portal", "Configure export by using Azure Policy", "Configure export by using the Defender REST API"], 2]],
+  "Seule l'API REST de Defender for Cloud permet l'export continu au niveau du groupe de ressources et vers Logic Apps. Le portail et Azure Policy se limitent au niveau abonnement.", { note: RECO });
+
+S(D_ID, "Your company has a Microsoft Entra ID tenant. An external contractor will provide managed SOC services. Both organizations must collaborate in Microsoft Teams. Requirements: accounts managed by administrators in each tenant, users from both organizations have access to a shared Teams channel, access uses single sign-on. What should you use?",
+  ["Microsoft Entra B2B collaboration (guest accounts)", "Azure AD B2C", "B2B direct connect", "Self-service sign-up"], 2,
+  "B2B direct connect établit une relation de confiance mutuelle entre deux tenants : chaque utilisateur reste géré dans son propre tenant, avec SSO, et peut accéder aux canaux partagés Teams.",
+  { note: "Le schéma de la question (exhibit) n'est pas lisible ; les mauvaises options sont reconstituées." });
+
+M(D_NET, "You are securing an IoT solution deployed in a public space. The devices are susceptible to physical manipulation. You need to ensure device integrity, prevent unauthorized access and ensure secure communication. What three actions should you recommend?",
+  ["Deploy tamper-proof hardware.", "Use TLS 1.1 for encrypted communication between devices and IoT Hub.", "Implement device authentication using X.509 certificates.", "Ensure the devices are open-source, enabling community contributions and updates.", "Regularly update device firmware."], [0, 2, 4],
+  "Matériel anti-effraction (intégrité physique), authentification des appareils par certificats X.509 et mises à jour régulières du firmware. TLS 1.1 est obsolète et l'open source n'apporte pas de garantie de sécurité en soi.");
+
+F(D_OPS, "You design a monitoring solution with Azure Monitor that categorizes data by its source. Which data source corresponds to each description?",
+  [["Data about performance and functionality", ["Application", "Infrastructure", "Azure Platform", "Custom Sources"], 0],
+   ["Data about containers and guest OS", ["Application", "Infrastructure", "Azure Platform", "Custom Sources"], 1],
+   ["Data about tenant-level operations", ["Application", "Infrastructure", "Azure Platform", "Custom Sources"], 2],
+   ["Data that uses Azure Monitor REST APIs to send log data to Azure Monitor", ["Application", "Infrastructure", "Azure Platform", "Custom Sources"], 3]],
+  "Application = performances et fonctionnement de l'appli ; Infrastructure = conteneurs et OS invité ; Azure Platform = opérations au niveau tenant/abonnement ; Custom Sources = données envoyées via l'API REST d'Azure Monitor.");
+
+F(D_DATA, "Protected health information is stored in Azure Storage and displayed through web forms. You must now address data display requirements. Which display method should you recommend for each use case?",
+  [["To permanently replace the original data", ["Masking", "Tokenization", "Hashing", "Encryption"], 0],
+   ["To replace the original data with data in the same format", ["Masking", "Tokenization", "Hashing", "Encryption"], 1],
+   ["To convert the data to fixed-length, irreversible output", ["Masking", "Tokenization", "Hashing", "Encryption"], 2]],
+  "Le masquage remplace définitivement la donnée ; la tokenisation la remplace par un jeton de même format (correspondance conservée dans un coffre chiffré) ; le hachage produit une empreinte de longueur fixe et irréversible. Le chiffrement est réversible et n'est pas la bonne réponse ici.");
+
+F(D_NET, "Your company has Microsoft Defender for Business. You need a secure internet access design. Which security control should you include for each requirement?",
+  [["Block access to social networking and chat sites", ["Web content filtering", "Web threat protection", "Custom indicators"], 0],
+   ["Block access to phishing sites", ["Web content filtering", "Web threat protection", "Custom indicators"], 1]],
+  "Le filtrage de contenu web bloque par catégories (réseaux sociaux, messagerie instantanée…). La protection contre les menaces web bloque les sites de phishing, malware et exploits connus. Les indicateurs personnalisés bloquent des URL, domaines ou fichiers précis.", { note: RECO });
+
+S(D_GOV, "Using the Cloud Adoption Framework Secure methodology, under which security discipline does establishing a Zero Trust access model for modern and legacy assets using identity and networking controls sit?",
+  ["Security governance", "Access control", "Asset protection", "Security operations"], 1,
+  "Dans la méthodologie Secure du CAF, la discipline « Access control » (contrôle d'accès) établit le modèle Zero Trust par des contrôles d'identité et de réseau.");
+
+M(D_GOV, "An organization wants to secure data at rest and in transit, enforce strong access control and keep an efficient incident response capability. Which two strategies should you recommend?",
+  ["Focus on Security Information and Event Management (SIEM).", "Focus on data plane security controls.", "Focus on security of network boundaries.", "Focus on protecting privileged user accounts.", "Focus on management plane security controls."], [1, 4],
+  "Le dump retient les contrôles du plan de données (protection des données au repos et en transit) et ceux du plan de gestion (contrôle d'accès et opérations sur les ressources).");
+
+S(D_OPS, "After a known virus infected a server VM, the administration team deployed off-the-shelf anti-malware with daily signature updates, but the server suffers a zero-day infection. You need a design that mitigates similar future attacks. Which recommendation should you include?",
+  ["Create a Microsoft Sentinel playbook.", "Create an anomaly detection policy.", "Create a firewall application rule.", "Create an application security group."], 1,
+  "Un antivirus à signatures ne détecte pas un zero-day ; il faut une détection comportementale (anomalies) qui repère des événements suspects sans indicateur connu.",
+  { rev: "À vérifier : dans la vraie vie, la réponse idéale serait un EDR/détection comportementale (Defender for Endpoint). Parmi ces quatre choix, celui du dump est la seule détection comportementale." });
+
+S(D_ID, "The company configured Conditional Access requiring MFA for all sign-ins outside the corporate LAN with a named location, but employees are prompted for MFA regardless of their location. What should you recommend so users are prompted only when not on the corporate LAN?",
+  ["Ensuring that the location has been configured as a trusted location", "Ensuring users have the Microsoft Authenticator mobile app installed", "Ensuring that the option to determine location by IP address is configured", "Ensuring that the option to determine location by GPS coordinates is enabled"], 0,
+  "Pour exclure le réseau d'entreprise de l'exigence MFA, l'emplacement nommé doit être marqué « approuvé » (trusted) et exclu dans la condition de la stratégie d'accès conditionnel.");
+
+S(D_DEV, "Some developers reference container images with the 'latest' tag. You need a solution that aligns container image security with best practices. What should you do?",
+  ["Pull container images using their digest to ensure the exact version is used.", "Always specify the image tag 'latest' when pulling images from public repositories.", "Enable auto-updates for container images to ensure the latest security patches are applied.", "Use only private container registries and avoid public repositories altogether."], 0,
+  "Le digest (SHA-256) identifie de façon immuable le contenu exact de l'image, alors qu'un tag comme latest peut être réaffecté à une autre version.");
+
+F(D_DATA, "A government engineering contract imposes strict data handling guidelines. Which key type should you implement in each case?",
+  [["Data subject to eDiscovery", ["Microsoft-managed keys", "Bring your own key (BYOK)", "Double Key Encryption (DKE)"], 1],
+   ["Keys that must be held within a defined geographical boundary", ["Microsoft-managed keys", "Bring your own key (BYOK)", "Double Key Encryption (DKE)"], 2],
+   ["Keys that must be stored in your data center", ["Microsoft-managed keys", "Bring your own key (BYOK)", "Double Key Encryption (DKE)"], 2]],
+  "BYOK convient aux données soumises à eDiscovery (le service doit pouvoir les lire). DKE utilise deux clés dont l'une reste chez vous, dans la zone géographique ou le datacenter de votre choix, de sorte que Microsoft ne peut pas déchiffrer seul.", { note: RECO });
+
+S(D_OPS, "An auditor reports that management ports on some VMs were not secured properly. Management wants to understand how this vulnerability might have been exploited. You need to determine the MITRE ATT&CK tactics and techniques an attacker may have used. What should you do?",
+  ["Review the vulnerability in Azure Resource Graph Explorer.", "Review the security initiative for VM management ports.", "Review the associated Defender for Cloud recommendation.", "Review the Quick Fix recommendations for the finding."], 2,
+  "Les recommandations de Defender for Cloud sont mappées aux tactiques et techniques MITRE ATT&CK : la page de la recommandation indique comment l'attaquant aurait pu exploiter la faille.");
+
+M(D_ID, "CompanyA (health services, mobile workforce): you need to recommend a solution for managing client data accessed by and stored on mobile devices. Which two should you include?",
+  ["User and Entity Behavior Analytics (UEBA)", "App protection policies (APP)", "User risk policies", "Conditional Access policies", "App Control for Business policies"], [1, 3],
+  "Les stratégies de protection des applications (APP) contrôlent les données dans les applications sur appareils mobiles ; l'accès conditionnel conditionne l'accès aux ressources selon l'appareil et le contexte.");
+
+Y(D_NET, "CompanyA: which protocols are available for point-to-site (P2S) connections based on the operating system each client uses?",
+  ["Android, iOS, Windows, Linux, and macOS systems can connect using OpenVPN.", "Only Windows devices can connect using Secure Socket Tunneling Protocol (SSTP).", "Only Windows and macOS devices can connect using Internet Key Exchange version 2 (IKEv2) VPN."], [0, 0, 1],
+  "OpenVPN fonctionne sur tous les systèmes cités. SSTP n'est pris en charge que sur Windows. IKEv2 n'est pas limité à Windows et macOS : il fonctionne aussi sur Linux, Android et iOS.");
+
+F(D_ID, "CompanyA: you need to mitigate the risks presented by Virtual Desktop Infrastructure (VDI). Which solution should you recommend for each requirement?",
+  [["To allow only reputable apps to run", ["App Control for Business", "AppLocker", "AppLocker or App Control for Business"], 0],
+   ["To manage apps that only run on Windows 8.1", ["App Control for Business", "AppLocker", "AppLocker or App Control for Business"], 1],
+   ["To block .ps1, .vbs, and .js scripts", ["App Control for Business", "AppLocker", "AppLocker or App Control for Business"], 2],
+   ["To control which apps a user can use", ["App Control for Business", "AppLocker", "AppLocker or App Control for Business"], 1]],
+  "App Control for Business (WDAC) s'appuie sur l'Intelligent Security Graph pour n'autoriser que les applications réputées, mais exige Windows 10+. AppLocker gère Windows 8.1 et le contrôle par utilisateur ; les deux peuvent bloquer des scripts.", { note: RECO });
+
+S(D_OPS, "CompanyA: you need to recommend a solution for addressing server vulnerabilities. What should you recommend?",
+  ["Deploying a network-based intrusion prevention system (NIPS) behind the server VLAN firewall", "Installing a host-based intrusion detection system (HIDS)", "Enabling data execution prevention on each server", "Uninstalling unused applications and services"], 3,
+  "Réduire la surface d'attaque en désinstallant les applications et services inutiles supprime directement des vulnérabilités. NIPS et HIDS détectent, DEP n'est qu'une atténuation partielle.");
+
+S(D_NET, "CompanyA: you need to recommend a solution for protecting SSH access to server VMs. What should you include?",
+  ["Just-in-time access", "Azure Bastion", "Network security groups", "Forced tunneling"], 1,
+  "Azure Bastion fournit un accès SSH/RDP protégé par TLS depuis le portail, sans exposer de port public sur les VM.",
+  { rev: "À vérifier : le just-in-time access de Defender for Cloud protège aussi SSH en ouvrant le port à la demande. Le dump retient Bastion." });
+
+S(D_OPS, "Solution evaluation. Your organization is part of a consortium that performs threat hunting. You need to design a solution that allows cyber threat intelligence (CTI) feeds to be shared automatically between member threat intelligence platforms (TIPs), using industry-accepted formats and protocols supported by Microsoft Sentinel. Solution: You register an app and grant API permissions to the app in Entra ID. You use the client secret provided during registration to add the TIP source. Does this solution meet the goal?",
+  ["Yes", "No"], 1,
+  "Il manque l'identifiant d'application (client) et l'identifiant du répertoire (tenant) en plus du secret client : les trois sont requis pour connecter la source TIP à Sentinel.");
+
+S(D_OPS, "Solution evaluation (same scenario: share CTI between TIPs automatically with Microsoft Sentinel). Solution: You retrieve the API Root and Collection ID for the TIP server and configure a data connector in your target workspace. Does this solution meet the goal?",
+  ["Yes", "No"], 0,
+  "Le connecteur TAXII de Sentinel (STIX/TAXII, protocole standard) nécessite l'API Root et l'ID de collection du serveur TIP : la solution est valide.");
+
+S(D_OPS, "Solution evaluation (same scenario). Solution: You define an app registration on the TIP source and specify Microsoft Sentinel as the target product. You provide an application ID and client secret to the TIP source. Does this solution meet the goal?",
+  ["Yes", "No"], 1,
+  "L'identifiant de répertoire (tenant) est également nécessaire avant de pousser les indicateurs de la TIP vers Sentinel via l'API Microsoft Graph tiIndicators.");
+
+M(D_GOV, "You use Microsoft Defender for Cloud and want the controls with the greatest impact on your Secure Score before a government audit. Which two controls should you recommend?",
+  ["Remediate outstanding vulnerabilities on internet-facing servers.", "Install system updates on internet-facing web servers.", "Ensure that improper security configurations have been resolved.", "Enable MFA for users that manage the Azure subscription.", "Secure management ports with network security groups (NSGs)."], [3, 4],
+  "Activer la MFA pour les comptes qui administrent l'abonnement et sécuriser les ports de gestion sont les contrôles qui rapportent le plus de points dans le score de sécurité Defender for Cloud.");
+
+M(D_NET, "A VNet hosts a web application on an Azure VM. The VM has outbound internet access. The VM must be reachable from the internet using standard web services only; all other services must be prohibited; VMs added later must not be reachable from the internet. Which two steps should you include?",
+  ["Assign a public IP address to the web server's network interface.", "Create a NSG and define inbound rules for web traffic.", "Create an application security group and assign a public IP.", "Deploy Azure Firewall and create an application rule.", "Deploy a NAT gateway and configure the VMs' private IPs."], [0, 1],
+  "L'adresse IP publique sur la carte réseau du serveur web l'expose, et le NSG limite l'entrée aux flux web ; les futures VM sans IP publique restent inaccessibles depuis Internet.");
+
+S(D_GOV, "Which Microsoft Cloud Adoption Framework security discipline must the Dev team adhere to before they can adopt DevOps models?",
+  ["Innovation Security", "Security Governance", "Security Operations", "Access Control"], 0,
+  "Dans le CAF, la discipline « Innovation Security » (sécurité de l'innovation / DevSecOps) doit être respectée avant l'adoption de modèles DevOps.");
+
+S(D_ID, "Each employee has a dedicated Azure virtual desktop managed by the department's IT administrator. You need a design that lets IT administrators manage VMs in any department while minimizing administrative overhead. Which authorization method should you recommend?",
+  ["Resource-based", "Scope-based", "Subscription-based", "Role-based"], 3,
+  "Le contrôle d'accès basé sur les rôles (RBAC) permet d'affecter des rôles prédéfinis (par ex. Virtual Machine Contributor) sur plusieurs départements avec peu de gestion.");
+
+/* ===== Dump importé (partie B) : questions 61 à 113 du document ===== */
+F(D_OPS, "Your security team spends too much time manually searching for threat vectors and responding to low-level events (Entra ID, Azure Firewall, Defender for Cloud). You propose Microsoft Sentinel. Which Sentinel-supported technologies or tools should you include in your justification?",
+  [["To automate threat responses", ["SOAR", "KQL", "SAST", "SDN", "CDN"], 0],
+   ["To correlate and search threat data", ["SOAR", "KQL", "SAST", "SDN", "CDN"], 1]],
+  "SOAR (orchestration, automatisation et réponse) automatise les réponses aux menaces via playbooks ; KQL (Kusto Query Language) sert à interroger et corréler les données dans Sentinel.");
+
+F(D_DATA, "A customer migrates Exchange on-premises to Office 365 (staged migration). Which email protection should you recommend for each scenario?",
+  [["Emails must be encrypted and sent primarily to customers using Gmail or Outlook.com", ["Microsoft Purview Message Encryption", "Information Rights Management (IRM)", "S/MIME"], 0],
+   ["Emails must be encrypted; once sent, they cannot be printed, copied or forwarded", ["Microsoft Purview Message Encryption", "Information Rights Management (IRM)", "S/MIME"], 1],
+   ["Emails must be encrypted using PKI certificates; messages must be signable", ["Microsoft Purview Message Encryption", "Information Rights Management (IRM)", "S/MIME"], 2]],
+  "Purview Message Encryption fonctionne avec des destinataires sur n'importe quelle messagerie. IRM empêche l'impression, la copie et le transfert. S/MIME repose sur des certificats PKI et permet la signature des messages.", { note: RECO });
+
+S(D_GOV, "You use Microsoft Secure Score. What is the impact of setting an improvement action's status to Risk accepted?",
+  ["The improvement action is mitigated via a partner.", "The improvement action is not implemented.", "The improvement action is planned for future implementation.", "The improvement action process is started."], 1,
+  "Risk accepted signifie que l'organisation accepte le risque : l'action n'est pas mise en œuvre (et n'est pas planifiée ni traitée par un partenaire).");
+
+S(D_OPS, "You use Microsoft Security Exposure Management and manage attack paths by focusing on choke points. What is the primary outcome of implementing choke points?",
+  ["Choke points allow attackers' traffic to be redirected away from critical assets.", "Choke points address multiple intersecting vulnerabilities at critical locations.", "Choke points remove all low priority vulnerabilities from the network.", "Choke points reduce the visibility of attack paths."], 1,
+  "Un choke point est un point de convergence de plusieurs chemins d'attaque : le corriger réduit en une seule action de nombreux chemins vers les actifs critiques.");
+
+F(D_ID, "You will create Entra ID Protection policies to identify risky account behavior. Which policy condition should you set for each suspicious behavior?",
+  [["Behavior consistent with known attack patterns", ["User risk", "Sign-in risk"], 0],
+   ["An anomalous token condition", ["User risk", "Sign-in risk"], 1],
+   ["Suspicious inbox rules", ["User risk", "Sign-in risk"], 1]],
+  "Selon le corrigé du dump : les comportements correspondant à des schémas d'attaque connus relèvent du risque utilisateur ; le jeton anormal et les règles de boîte de réception suspectes relèvent du risque de connexion.",
+  { rev: "À vérifier : dans la documentation Microsoft, « suspicious inbox rules » est une détection de risque utilisateur. Retiens la réponse du dump pour cet examen, mais compare avec la doc si le libellé change." });
+
+S(D_DATA, "Your company processes classified information on hardened on-premises systems and wants to add cloud compute capacity while maintaining maximum security. You need a compute solution that encrypts data in use. Which technology should you recommend to enable confidential computing?",
+  ["Software Guard Extensions (SGX) enclaves", "Dedicated Hardware Security Module (HSM)", "Azure Key Vault", "A Trusted Platform Module (TPM)"], 0,
+  "Les enclaves SGX isolent code et données dans une zone matérielle du processeur : les données restent protégées en cours d'utilisation, même si l'OS est compromis.");
+
+S(D_GOV, "A research organization plans to use Microsoft Copilot. The security officer is concerned about how the organization's data will be protected from unauthorized access or exposure to competitors. What should you determine?",
+  ["Separate physical datacenters for each tenant", "Multi-layered encryption for data at rest and in transit", "Badge-only access for Microsoft employees to datacenters", "Logical isolation through Microsoft Entra"], 3,
+  "L'isolation logique des tenants via Microsoft Entra garantit que les données d'une organisation ne sont accessibles qu'à ses propres utilisateurs autorisés.");
+
+S(D_DATA, "You use Azure Storage and Entra ID. You need a design that limits access to blobs based on tags. Which authentication method should you recommend to support role assignment conditions?",
+  ["Attribute-Based Access Control (ABAC)", "Mandatory Access Control (MAC)", "Privileged Access Management (PAM)", "Discretionary Access Control (DAC)"], 0,
+  "ABAC ajoute des conditions aux attributions de rôles Azure RBAC en fonction d'attributs, comme les balises d'index de blob.");
+
+S(D_DATA, "You configure Azure AI services for a healthcare application that handles sensitive patient data stored longer than 48 hours. You need to protect the confidentiality and integrity of data processed by the AI services, aligned with best practices. What should you do?",
+  ["Use built-in encryption provided by Azure AI services.", "Enable Customer Managed Keys (CMK).", "Share API keys with developers through internal channels.", "Allow service access only from trusted IP ranges."], 1,
+  "Les clés gérées par le client (CMK) donnent le contrôle du chiffrement au repos et répondent aux exigences de conformité pour les données sensibles conservées au-delà de 48 heures.");
+
+S(D_ID, "While implementing Zero Trust in a Microsoft 365 tenant, you need to define the encryption level and antivirus version that devices must meet before being allowed access to resources. Which policy type should you configure?",
+  ["Compliance policy", "Conditional Access policy", "Device configuration profile policy", "Enrollment policy"], 0,
+  "Les stratégies de conformité Intune définissent l'état attendu des appareils (chiffrement, version d'antivirus…) ; l'accès conditionnel consomme ensuite cet état pour autoriser ou non l'accès.");
+
+F(D_NET, "Your organization configures Conditional Access in Microsoft Entra. Which Zero Trust principle does each action fulfil?",
+  [["Move the control plane to the cloud", ["Verify explicitly", "Use least privilege access", "Assume breach"], 0],
+   ["Consider all clients to be external", ["Verify explicitly", "Use least privilege access", "Assume breach"], 0],
+   ["Segment network infrastructure", ["Verify explicitly", "Use least privilege access", "Assume breach"], 2],
+   ["Move the management plane to the cloud", ["Verify explicitly", "Use least privilege access", "Assume breach"], 2]],
+  "Vérifier explicitement : évaluer chaque accès selon identité, appareil, risque (plan de contrôle dans le cloud, tous les clients considérés comme externes). Supposer la compromission : segmenter et limiter l'impact.",
+  { note: RECO, rev: "À vérifier : la dernière affectation (plan de gestion dans le cloud → Assume breach) est surprenante ; retiens celle du dump." });
+
+F(D_GOV, "You use Defender for Cloud to evaluate infrastructure compliance. For each purpose, which element should you identify?",
+  [["Used to control specific security conditions using rules", ["Security policies", "Security initiatives", "Security recommendations"], 0],
+   ["Used to group rules for a specific purpose or goal", ["Security policies", "Security initiatives", "Security recommendations"], 1],
+   ["Used to identify remediation prerequisites", ["Security policies", "Security initiatives", "Security recommendations"], 2]],
+  "Les stratégies (Azure Policy) contrôlent les conditions ; les initiatives regroupent des stratégies autour d'un objectif ; les recommandations indiquent ce qu'il faut corriger et les prérequis de remédiation.");
+
+F(D_ID, "Enterprise access model: at which level should you work in each scenario?",
+  [["To enforce your Zero Trust policy", ["Tier 0", "Tier 1", "Tier 2"], 0],
+   ["To facilitate your partners accessing applications in your tenant", ["Tier 0", "Tier 1", "Tier 2"], 2],
+   ["To manage assets and the protective monitoring of your estate", ["Tier 0", "Tier 1", "Tier 2"], 1],
+   ["To create applications and websites to store business value", ["Tier 0", "Tier 1", "Tier 2"], 1]],
+  "Tier 0 = plan de contrôle (identité, politiques d'accès Zero Trust) ; Tier 1 = gestion des actifs et charges de travail ; Tier 2 = accès des utilisateurs, y compris partenaires.",
+  { rev: "À vérifier : les correspondances sont celles du dump ; le modèle d'accès d'entreprise officiel parle plutôt de plans (contrôle, gestion, données/charge de travail, accès utilisateur et applicatif) que de tiers." });
+
+S(D_NET, "A real-time stock price app is vulnerable to command injection and remote file inclusion. Requirements: no application code changes, common misconfigurations must be identified, HTTP protocol anomalies must be detected. What should you do?",
+  ["Deploy Azure Web Application Firewall (WAF) and configure a bot protection rule set.", "Deploy Azure WAF and enable the CRS 2.2.9 OWASP rule set.", "Deploy Azure WAF with the default managed rule set.", "Deploy Azure WAF and configure Core Rule Set (CRS) 3.1."], 2,
+  "Le jeu de règles géré par défaut (Default Rule Set) du WAF Azure couvre les injections de commandes, l'inclusion de fichiers distants et les anomalies HTTP, sans modifier le code. Le jeu bot ne traite pas ces attaques et CRS 2.2.9 / 3.1 sont des versions anciennes.");
+
+S(D_OPS, "The organization must be safeguarded against malicious threats posed by email messages and links. Which Microsoft 365 Defender service should you recommend?",
+  ["Defender for Identity", "Defender for Endpoint", "Defender for Office 365", "Defender for Cloud Apps"], 2,
+  "Defender for Office 365 protège la messagerie et la collaboration : liens et pièces jointes malveillants, phishing, usurpation.");
+
+S(D_GOV, "Website traffic surged after a product launch. You must ensure the website can handle the surge and maintain availability, following the Azure Well-Architected Framework. What should you do?",
+  ["Scale out web servers to distribute the incoming traffic.", "Enhance network performance to reduce latency.", "Scale up web servers to handle more traffic.", "Implement a queuing system to manage incoming requests."], 0,
+  "La mise à l'échelle horizontale (scale out) répartit la charge sur plusieurs instances : meilleure disponibilité et résilience qu'un scale up qui garde un point unique de défaillance.");
+
+F(D_OPS, "Microsoft Sentinel is deployed. Which tool should you recommend for each incident management activity?",
+  [["Automatically isolate an infected machine", ["Notebook", "Playbook", "Workbook", "Runbook"], 1],
+   ["Visualize and monitor threat data", ["Notebook", "Playbook", "Workbook", "Runbook"], 2],
+   ["Analyze data with Python machine learning", ["Notebook", "Playbook", "Workbook", "Runbook"], 0]],
+  "Le playbook (Logic Apps) automatise la réponse, le workbook visualise les données, le notebook (Jupyter) permet l'analyse avancée en Python et le machine learning.");
+
+F(D_ID, "You use Microsoft Entra Privileged Identity Management (PIM). Which configuration option should you recommend for each requirement?",
+  [["Users must successfully complete MFA as part of role activation", ["Eligible", "Active"], 0],
+   ["Activated roles should only manage resources in a specific department", ["Administrative unit", "Directory (tenant-wide)"], 0]],
+  "Une attribution éligible impose une activation (MFA, justification, approbation). Une unité administrative limite l'étendue du rôle à un sous-ensemble du répertoire, par exemple un service.", { note: RECO });
+
+S(D_DATA, "You migrate a legacy HR management system to Azure VMs running a custom web server. An attacker attempted a downgrade attack. You need a mitigation; data in motion must be protected. What should you do?",
+  ["Configure input validation.", "Implement challenge tokens.", "Rekey SSL certificates.", "Disable TLS 1.0 support."], 3,
+  "Les attaques par rétrogradation exploitent les protocoles anciens (SSL 3.0, TLS 1.0). Désactiver TLS 1.0 force des versions modernes.");
+
+S(D_ID, "You are securing an Azure environment and implementing best practices for identity and access management. You must comply with multiple frameworks and protect privileged access. After reviewing the landing zone design, what should you do to ensure secure access?",
+  ["Enable Microsoft Entra multifactor authentication (MFA) for all users with administrative roles.", "Grant permanent administrative privileges to key personnel.", "Assign administrative roles directly to individual users.", "Require administrators to use shared accounts."], 0,
+  "La MFA sur les rôles administratifs est la mesure fondamentale pour protéger les accès privilégiés et satisfaire les référentiels de conformité.");
+
+M(D_GOV, "You enabled Defender for Cloud with enhanced security features. You need the Information Security Officer to be notified by email when a compliance assessment fails. Which two steps should you complete?",
+  ["Add a workflow automation.", "Create a dashboard.", "Enable a recommendation.", "Create a logic app.", "Define policy."], [0, 3],
+  "Une automatisation de workflow Defender for Cloud déclenche une Logic App en réponse à un événement (ici l'échec d'une évaluation de conformité) ; la Logic App envoie l'e-mail.");
+
+S(D_DATA, "Employees use laptops running Windows 10 or 11. You need to silently enable BitLocker on employee systems. Which process or task should you include?",
+  ["Creating an endpoint security policy in Microsoft Intune", "Defining a multi-workload data encryption policy (DEP) in PowerShell", "Submitting a Customer Key activation request in the Fast Track portal", "Running an Intune device encryption report to verify TPM versions"], 0,
+  "Une stratégie de sécurité des points de terminaison Intune (chiffrement de disque) active BitLocker silencieusement, sans interaction de l'utilisateur.");
+
+S(D_OPS, "You configure Microsoft Defender for Cloud Apps to enhance visibility and control over cloud applications. You want to automate discovery of cloud applications while grouping them for easier management and ensuring compliance with industry regulations. What should you do?",
+  ["Activate Anonymization", "Enable Snapshot Reports", "Use App Tags", "Configure Score Metrics"], 3,
+  "Les métriques de score définissent comment les applications découvertes sont évaluées (conformité réglementaire, normes de sécurité) et permettent de prioriser les actions.");
+
+S(D_DEV, "The organization adopted a lifecycle security strategy for application security. You need to ensure that security is a key consideration at every phase of the application's development. Which strategy should you prioritize?",
+  ["Regularly review user roles and permissions to enforce least privilege access.", "Focus primarily on security testing after application deployment.", "Limit vulnerability testing to only high-severity issues.", "Implement logging and monitoring to detect incidents as they occur."], 0,
+  "Le corrigé du dump retient la revue régulière des rôles et permissions pour appliquer le moindre privilège.",
+  { rev: "À vérifier : la journalisation/supervision est aussi une pratique de cycle de vie. Le dump retient la revue des rôles." });
+
+S(D_NET, "Your organization deploys IoT sensors in outdoor public locations that collect sensitive data and transmit it to the cloud. The security team needs a method for robust authentication and secure data transmission. What should the team recommend?",
+  ["Use pre-shared keys (PSKs) for device authentication and encrypt communication using TLS 1.3.", "Integrate field gateways to secure legacy devices and offload encryption responsibilities from individual devices.", "Authenticate devices with X.509 certificates and secure communications using TLS 1.2.", "Protect communications with network-layer encryption and eliminate the need for device-level authentication."], 2,
+  "Les certificats X.509 (PKI) offrent une authentification robuste des appareils ; TLS 1.2 chiffre les communications de bout en bout. Les clés pré-partagées sont plus faibles et supprimer l'authentification des appareils est inacceptable.");
+
+S(D_DATA, "No DLP policies exist, sensitive information is not clearly defined and no High Severity DLP alerts are configured. You need to create a policy that solves the issues in the report. Which template should you use?",
+  ["Data Leaks template", "Security policy violations", "Risky user template", "Data theft by departing users"], 0,
+  "Le modèle « Data Leaks » de la gestion des risques internes Purview détecte les fuites de données et s'appuie sur des stratégies DLP et des types d'informations sensibles.");
+
+S(D_DEV, "After a configuration error led to a breach that spread to multiple environments, you must design an Azure landing zone to reduce the risk. You need a process for storing network and system configurations centrally in standardized files, based on DevSecOps best practices. Which option should you recommend?",
+  ["Continuous delivery", "Infrastructure as code", "Continuous integration", "Infrastructure automation"], 1,
+  "L'infrastructure as code (Bicep, Terraform, ARM) décrit les configurations dans des fichiers standardisés et versionnés, ce qui rend les déploiements répétables et auditables.");
+
+M(D_DEV, "You plan to migrate all compute operations to a Docker-based installation. You need to ensure the new platform is secure by minimizing the risk of unknown vulnerabilities. Which two design requirements should you recommend?",
+  ["Configure hypervisor policies that only allow trusted processes.", "Require that all images come from a private trusted registry.", "Integrate the platform with Microsoft Defender for Cloud.", "Implement full-disk encryption on each VM.", "Create an endpoint security policy in Microsoft Endpoint Manager."], [1, 2],
+  "Un registre privé de confiance garantit la provenance des images ; Defender for Cloud analyse les vulnérabilités des conteneurs et des images.");
+
+F(D_DATA, "A web app processes financial data. Data kept in Azure Storage must be encrypted using app-specific keys; when accessed, it is decrypted with the app-specific key and re-encrypted before being sent to its destination. What should you recommend?",
+  [["To generate and manage certificates", ["Implement Azure Key Vault", "Implement managed HSM pools"], 0],
+   ["To decrypt and re-encrypt Storage data", ["Encrypt the data with the destination node's public key", "Encrypt the data with the source node's private key"], 0]],
+  "Azure Key Vault génère et gère les certificats (infrastructure PKI). Les données sont rechiffrées avec la clé publique du nœud destinataire : seul le détenteur de la clé privée correspondante pourra les lire.", { note: RECO });
+
+F(D_OPS, "You use Microsoft Sentinel and need closed incidents to be searchable for future incidents. Which classification should you recommend for each scenario?",
+  [["A user signs in after hours to access a sensitive document in preparation for a shareholder meeting", ["True Positive", "Benign Positive", "False Positive"], 1],
+   ["A penetration tester triggers a file integrity monitoring alert on a protected file server", ["True Positive", "Benign Positive", "False Positive"], 1],
+   ["A contractor sends proprietary product blueprints to a personal email address", ["True Positive", "Benign Positive", "False Positive"], 0]],
+  "Benign Positive : activité suspecte détectée correctement mais attendue et inoffensive (sortie hors horaires, test d'intrusion). True Positive : vrai incident de sécurité (fuite de plans). False Positive : alerte déclenchée à tort.");
+
+S(D_DATA, "PII and PHI are stored in Microsoft 365 and Azure and must receive special handling. You need to protect this data in motion and at rest. What should you recommend?",
+  ["Define sensitivity labels and configure protection settings.", "Deploy X.509 certificates on servers and configure TLS.", "Configure a Data Loss Prevention (DLP) policy for sensitive documents.", "Enable BitLocker on all file servers and user workstations."], 0,
+  "Les étiquettes de confidentialité avec paramètres de protection (chiffrement, droits) suivent le document partout, donc au repos et en transit. TLS, DLP ou BitLocker ne couvrent chacun qu'une partie.");
+
+F(D_GOV, "You use Microsoft Purview Compliance Manager. How would you define each Compliance Score component?",
+  [["Defines how configurations, processes and people are managed", ["Assessment", "Control", "Group", "Template"], 1],
+   ["Groups the actions that are required to fulfil a regulation, standard or law", ["Assessment", "Control", "Group", "Template"], 0],
+   ["Organizes assessments by standard, organizational teams, or service", ["Assessment", "Control", "Group", "Template"], 2]],
+  "Contrôle = règle de gestion des configurations, processus et personnes ; évaluation (assessment) = regroupement des actions nécessaires pour une réglementation ; groupe = organisation des évaluations par norme, équipe ou service.");
+
+S(D_GOV, "Microsoft released a posture update to the baseline with settings that address ransomware tactics. You have tested the settings. What should you recommend to deploy the updated baseline across the enterprise?",
+  ["Microsoft Intune", "Microsoft Operational Security Assurance (OSA)", "Microsoft Purview", "Windows Autopilot"], 0,
+  "Les profils de référence de sécurité (security baselines) de Microsoft Intune se déploient de façon centralisée sur les appareils gérés.");
+
+M(D_DATA, "A health services provider uses custom Azure-hosted APIs. Requirements: data encrypted in motion and at rest, verifiably secure encryption keys, keys stored so that they cannot be extracted. Which two tasks should you recommend?",
+  ["Deploy managed Hardware Security Module (HSM) pools to securely handle cryptographic operations for systems that process sensitive information.", "Implement OAuth and enforce JWT-based encryption on all communications.", "Use Azure Key Vault to request and manage trusted X.509 certificates for the APIs from a trusted Certificate Authority.", "Ensure that data exchanges between security domains require Azure AD-based SAML.", "Generate HMAC-based One-Time Passwords (HOTPs) for each transaction using a secret and a counter."], [0, 2],
+  "Les pools HSM managés stockent les clés de façon non extractible (matériel validé FIPS 140). Key Vault gère les certificats X.509 d'une autorité de confiance pour chiffrer les communications.");
+
+S(D_GOV, "You design a business continuity and disaster recovery (BCDR) plan for application workloads in Azure. You need a recommendation to support BCDR best practices, ensuring minimal disruption and effective failover. What should you do?",
+  ["Implement Azure Site Recovery for Azure-to-Azure VM disaster recovery scenarios.", "Use overlapping IP address ranges in production networks and disaster recovery (DR) networks.", "Configure single region and peering location for ExpressRoute.", "Implement third-party backup solutions to increase backup flexibility."], 0,
+  "Azure Site Recovery réplique les VM vers une autre région et automatise le basculement. Des plages IP qui se recouvrent compliquent le failover et un seul emplacement ExpressRoute crée un point de défaillance unique.");
+
+F(D_NET, "Azure Front Door serves static images and videos stored in Azure Storage (see exhibit). Which WAF configuration meets each requirement?",
+  [["To restrict access to your content by region", ["Geo-filtering policy", "Bot protection rule set", "IP restriction rule", "Rate limit rule"], 0],
+   ["To throttle requests from a client IP address", ["Geo-filtering policy", "Bot protection rule set", "IP restriction rule", "Rate limit rule"], 3]],
+  "Le filtrage géographique autorise ou bloque par pays/région ; la règle de limitation de débit plafonne le nombre de requêtes par IP sur une période (les requêtes restent autorisées mais limitées).", { note: RECO });
+
+O(D_OPS, "You need to access a specific threat intelligence report in Microsoft Defender for Cloud. Which three actions should you perform, in sequence?",
+  ["From the Defender for Cloud sidebar, open the Overview page.", "From the Alert details page, select the Next: Take Action button.", "From the Defender for Cloud sidebar, open the Security alerts page.", "Select an alert.", "From the Alert details page, select the link to the report."], [2, 3, 4],
+  "On ouvre la page Security alerts, on sélectionne une alerte, puis on suit dans les détails de l'alerte le lien vers le rapport de renseignement sur les menaces (PDF).");
+
+S(D_NET, "A company wants a solution that acts as a secure web gateway and provides secure access to all internet and SaaS apps. Which solution should you use?",
+  ["Microsoft Entra Internet Access", "Virtual Private Network (VPN)", "Microsoft Defender for Cloud Apps", "Azure Firewall"], 0,
+  "Microsoft Entra Internet Access (Global Secure Access) est la passerelle web sécurisée (SWG) de Microsoft pour Internet et les applications SaaS.");
+
+M(D_ID, "You plan a BYOD policy with devices running iOS or Android, some managed by third-party MDM solutions. You need a solution that limits unintentional or intentional data loss. Which two statements should you include?",
+  ["App protection policies can prevent all data sharing between apps on a device.", "App protection policies are compatible with third-party mobile device management (MDM) solutions.", "App protection policies can encrypt all locally stored device data.", "App protection policies allow app deployment to third-party MDM devices."], [0, 1],
+  "Les stratégies de protection des applications contrôlent le partage de données entre applications et fonctionnent indépendamment de l'MDM (y compris tiers). Elles ne chiffrent pas tout l'appareil et ne déploient pas d'applications.");
+
+S(D_ID, "The company is implementing Microsoft's Zero Trust model to limit access to authorized users and devices and proactively monitor threats. What should you do first?",
+  ["Migrate all applications to single sign-on (SSO) solution.", "Do security checks on identity verification and device health.", "Establish a security operations center (SOC) to handle threat detection.", "Implement role-based access control (RBAC) to manage permissions."], 1,
+  "Zero Trust commence par vérifier explicitement l'identité et l'état de santé de l'appareil avant d'accorder l'accès.");
+
+S(D_GOV, "Azure Backup protects on-premises Windows VMs with incremental backups and locally redundant storage (LRS). A security audit requires on-premises VMs to be protected and replicated across availability zones to guarantee data residency and resiliency in the same region. What should you do?",
+  ["Configure geo-redundant storage (GRS) for the recovery vault.", "Leave the configuration as locally redundant storage (LRS).", "Configure zone-redundant storage (ZRS) for the recovery vault.", "Configure geo-zone-redundant storage (GZRS) for the recovery vault."], 2,
+  "ZRS réplique entre zones de disponibilité dans la même région, ce qui garantit résidence des données et résilience. GRS/GZRS copient vers une région secondaire, non demandée.");
+
+O(D_ID, "You deploy Zero Trust within a Microsoft 365 tenant. Which five actions should you perform, in sequence?",
+  ["Add Zero Trust identity and device access protection.", "Enroll the devices in Intune.", "Configure identity and device access protection.", "Evaluate, pilot, and deploy Microsoft 365 Defender.", "Implement Microsoft Purview Information Protection."], [2, 1, 0, 3, 4],
+  "Ordre du dump : configurer la protection des identités et des accès, inscrire les appareils dans Intune, ajouter la protection Zero Trust identité/appareil, évaluer et déployer Microsoft 365 Defender, puis mettre en œuvre Purview Information Protection.",
+  { note: "Les distracteurs éventuels de la question d'origine ne sont pas visibles ; seules les cinq étapes correctes sont proposées." });
+
+S(D_DATA, "Cloud workloads run on shared hypervisors; management is concerned about process-level security on database and transaction processing servers. Which recommendation should you include?",
+  ["Deploy Azure WAF and ensure that OWASP core rule sets are enabled.", "Move sensitive processes to a trusted execution environment (TEE) platform.", "Move all database and transaction processing servers to the same NSG.", "Implement managed HSM pools for servers running sensitive processes."], 1,
+  "Un environnement d'exécution de confiance (TEE) isole matériellement les processus sensibles, même sur un hyperviseur partagé.");
+
+M(D_DATA, "A web app on Azure App Service risks a compromised private key having a cascading effect on all user encryption keys. You need to enhance cryptographic security by implementing a trust model. Which two actions should you recommend?",
+  ["Issue a certificate to a subordinate CA.", "Escrow user certificates with a third party.", "Issue user certificates from a subordinate CA.", "Pin user certificates with multiple CAs.", "Issue a master certificate to a root CA."], [0, 2],
+  "Une hiérarchie PKI à plusieurs niveaux limite l'impact : la CA racine délègue à une CA subordonnée, qui émet les certificats utilisateur ; la compromission d'une clé subordonnée n'invalide pas toute la chaîne.");
+
+S(D_DATA, "You use Azure Blob Storage to store off-site copies of sensitive financial data and recommend customer-provided keys for granular control over encryption operations. What key implementation method should you recommend?",
+  ["Uploading the key to Azure Key Vault", "Enabling the key in a managed Hardware Security Module (HSM)", "Linking the key to the Azure key vault", "Including the key in a request header"], 3,
+  "Avec une clé fournie par le client pour Blob Storage, la clé est transmise dans l'en-tête de chaque requête ; Azure ne la conserve pas.");
+
+S(D_ID, "For a hybrid infrastructure, you design a Zero Trust policy enforcement solution that facilitates access control for assets in line with the enterprise access model. Where does Zero Trust policy enforcement align?",
+  ["Management plane", "Control plane", "User access", "Data plane"], 1,
+  "L'application de la politique Zero Trust et la vérification d'identité relèvent du plan de contrôle du modèle d'accès d'entreprise.");
+
+M(D_GOV, "You design an Azure landing zone and must achieve a security baseline as quickly as possible. Which three Microsoft tools should you recommend?",
+  ["Microsoft Defender for Cloud", "Exchange Online", "Privileged Identity Management (PIM)", "Azure Firewall", "Route tables"], [0, 2, 3],
+  "Defender for Cloud (posture et protection), PIM (accès privilégiés juste-à-temps) et Azure Firewall (filtrage réseau) établissent rapidement une base de sécurité d'une landing zone.");
+
+S(D_DATA, "Employees send sensitive medical records by email. Requirements: only intended recipients can view content; employees can send secure email to Gmail, Yahoo!, Outlook.com users. You plan to implement Microsoft Purview Message Encryption. What should you recommend first?",
+  ["Verify that Azure RMS has been activated.", "Define mail flow rules in the Exchange admin center.", "Create and publish sensitivity labels."], 0,
+  "Purview Message Encryption repose sur Azure Rights Management : il faut d'abord vérifier qu'Azure RMS est activé avant de définir règles de flux ou étiquettes.",
+  { note: "Il manque peut-être une option dans la capture ; la bonne réponse reste la première." });
+
+S(D_ID, "Your organization uses Microsoft Entra joined devices and a centralized management system. IT wants to implement Windows LAPS to improve local administrator password security. How should you deploy LAPS in the best possible way?",
+  ["Use the direct registry modification deployment.", "Use the Windows LAPS Group Policy deployment.", "Use Microsoft Intune with the Windows LAPS CSP deployment.", "Use the Local Computer Group Policy LAPS enforcement deployment."], 2,
+  "Pour des appareils joints à Microsoft Entra, Intune configure Windows LAPS de façon centralisée via le fournisseur de services de configuration (CSP) Windows LAPS.");
+
+/* ===== Dump importé (partie C) : questions 115 à 160 du document ===== */
+F(D_NET, "Case study (CompanyA, e-commerce). You need to design a solution that ensures the e-commerce application is secure. Which Azure Firewall rule type should you recommend to meet each requirement?",
+  [["To facilitate customer access to the API endpoint", ["Application rule", "Network rule", "DNAT rule and network rule"], 2],
+   ["To facilitate contractor access to the database server", ["Application rule", "Network rule", "DNAT rule and network rule"], 2],
+   ["To facilitate transaction server access to the credit card processor", ["Application rule", "Network rule", "DNAT rule and network rule"], 1]],
+  "L'accès entrant depuis Internet vers une ressource privée exige une règle DNAT (traduction d'adresse publique → privée) associée à une règle réseau qui autorise le port. L'accès sortant vers le processeur de cartes ne demande qu'une règle réseau (TCP sur le port concerné).", { note: RECO });
+
+S(D_DATA, "Case study (CompanyA). You must secure the e-commerce database after a SQL injection attack let a malicious user modify database content. What should you include in your recommendation?",
+  ["The web development team should run all submitted user requests through a link checker.", "The web development team should add input validation functions to the shopping cart page.", "The system security team should require TLS on all servers that host web content.", "The DBA should enable data execution prevention on all servers hosting website data."], 1,
+  "La validation des entrées empêche l'exécution d'instructions SQL malveillantes insérées dans les champs de formulaire. Un vérificateur de liens traite le phishing, TLS protège le transport et DEP vise la mémoire.");
+
+M(D_NET, "Case study (CompanyA). You design a solution for access to Cosmos DB. Requirements: extend the on-premises network into Azure, bypassing the internet; provide access to a single database instance. Which two technologies or components should you recommend?",
+  ["Virtual network TAP", "Private Link", "Service endpoint", "ExpressRoute"], [1, 3],
+  "ExpressRoute prolonge le réseau on-premises dans Azure par une connexion privée sans passer par Internet ; Private Link expose une seule instance de base de données via un point de terminaison privé.");
+
+S(D_DATA, "Case study (Synapse). You need to ensure the Synapse deployment meets Azure Security Benchmark baseline requirements: each resource (dedicated SQL pools, serverless SQL endpoints) must be accessible via a managed private endpoint. Solution: You recommend creating a Managed Virtual Network Workspace and that all dedicated and serverless pools should be located in the workspace. Does this solution meet the goal?",
+  ["Yes", "No"], 0,
+  "Un espace de travail à réseau virtuel managé (Managed Virtual Network Workspace) est le prérequis pour utiliser des points de terminaison privés managés avec Synapse.");
+
+S(D_DATA, "Case study (Synapse, same goal). Solution: You recommend creating separate VNets for dedicated SQL pools and serverless SQL endpoints, connected using Azure ExpressRoute. Does this solution meet the goal?",
+  ["Yes", "No"], 1,
+  "Des VNet séparés reliés par ExpressRoute ne donnent pas accès à des points de terminaison privés managés : il faut un Managed Virtual Network Workspace.");
+
+S(D_DATA, "Case study (Synapse, same goal). Solution: You recommend deploying all SQL nodes in a common virtual network and creating a P2S connection between each endpoint and Azure Synapse Analytics. Does this solution meet the goal?",
+  ["Yes", "No"], 1,
+  "Une connexion VPN point à site relie un poste unique à un VNet ; elle ne fournit pas de point de terminaison privé managé, qui exige un Managed Virtual Network Workspace.");
+
+Y(D_GOV, "You are asked how to increase the Secure Score for production environments. For each statement, select Yes if it is true.",
+  ["Using customer-managed keys to encrypt data in SQL Managed Instances will improve your Secure Score.", "Changing an improvement action to the Risk accepted status will NOT reduce your Secure Score.", "Based on Secure Score, you can use Defender for Cloud to automatically delete resources with security misconfigurations."], [1, 0, 1],
+  "Le chiffrement par clé client n'est pas une recommandation qui fait gagner des points ici ; l'acceptation du risque ne retire pas de points déjà acquis ; Defender for Cloud ne supprime jamais automatiquement des ressources mal configurées.",
+  { rev: "À vérifier : le dump répond Non à la première affirmation ; si l'examen détaille une recommandation CMK sur SQL MI, le résultat pourrait différer." });
+
+F(D_DATA, "You migrate on-premises SQL Servers to Azure SQL Database and Azure SQL Managed Instance. Which feature should you implement for each requirement?",
+  [["To encrypt data and log files", ["Always Encrypted", "Ledger", "TDE", "TDS"], 2],
+   ["To maintain a history of all database changes over time", ["Always Encrypted", "Ledger", "TDE", "TDS"], 1],
+   ["To prevent database admins from accessing sensitive data", ["Always Encrypted", "Ledger", "TDE", "TDS"], 0]],
+  "TDE chiffre les fichiers de données et de journaux au repos ; Ledger conserve l'historique inviolable des modifications ; Always Encrypted empêche même les administrateurs de bases de lire les données sensibles (clés côté client).");
+
+S(D_DEV, "All Azure Virtual Desktop VMs run Windows 11. You need a design that mitigates application-associated risks and uses threat intelligence so that only applications with a known good reputation are allowed to run. Which recommendation should you include?",
+  ["Configure the Application Control for Windows policy.", "Deploy Microsoft Defender Application Guard.", "Create an AppLocker policy.", "Enable software restriction policies (SRP)."], 0,
+  "Application Control (WDAC) peut s'appuyer sur l'Intelligent Security Graph pour n'autoriser que les applications à bonne réputation. AppLocker et SRP ne s'appuient pas sur la réputation.");
+
+S(D_OPS, "You use Defender for Cloud, Entra ID, Azure Key Vault and AKS. Your manager wants a unified solution for security analytics and threat intelligence by integrating the services with Microsoft Sentinel. Which built-in onboarding method should you use?",
+  ["Configure Syslog.", "Enable the built-in connectors to the cloud-native services.", "Create REST APIs."], 1,
+  "Sentinel propose des connecteurs de données natifs pour les services Azure et Microsoft : c'est la méthode d'intégration intégrée la plus simple.");
+
+S(D_OPS, "A polymorphic virus has infiltrated a file server VM and is infecting local files. Which phase of the incident response cycle should your team activate?",
+  ["Analysis", "Postmortem", "Preparation", "Containment"], 3,
+  "L'infection est active : la priorité est le confinement (containment) pour empêcher la propagation avant l'éradication et la restauration.");
+
+M(D_DATA, "PHI generated by medical monitoring equipment is stored in an Azure blob. Requirements: all access tracked; tracking information easily accessible for auditing; copies of audit logging information stored read-only. Which three actions should you include?",
+  ["Enable blob versioning for the blob that will store logs.", "Periodically export log data to an Azure storage account.", "Ensure PHI logging information is sent to Azure Monitor.", "Store logging information using immutable storage.", "Configure the logging blob to use blob soft delete."], [1, 2, 3],
+  "Azure Monitor centralise et rend les journaux facilement accessibles ; l'export périodique crée des copies ; le stockage immuable (WORM) les rend en lecture seule.");
+
+F(D_DATA, "You use Azure Key Vault for X.509 certificates, API secrets and storage account keys. Which storage method should you recommend for each use case?",
+  [["Store TLS/SSL certificates and associated keys and secrets", ["Vaults", "Managed HSM pools"], 0],
+   ["Store keys in cryptographic hardware", ["Vaults", "Managed HSM pools"], 1],
+   ["Store, sync and rotate Azure Storage account keys", ["Vaults", "Managed HSM pools"], 0]],
+  "Les coffres (vaults) hébergent certificats, secrets et clés de comptes de stockage. Les pools HSM managés servent aux clés protégées par matériel cryptographique dédié.", { note: RECO });
+
+F(D_GOV, "Azure Policy must prevent the accidental deletion of resource groups. Complete the policy snippet.",
+  [["effect", ["deployIfNotExists", "audit", "deny"], 0],
+   ["Block holding the deployment content", ["deployment", "resources"], 0],
+   ["Deployment mode key", ["template", "templateLink"], 0]],
+  "L'effet deployIfNotExists déploie un verrou « CanNotDelete » (Microsoft.Authorization/locks) si celui-ci est absent ; la section deployment contient le template ARM qui crée le verrou.", { note: "Le snippet est partiellement visible ; les options distractrices sont reconstituées." });
+
+F(D_NET, "All requests to the HR platform are managed by Azure Application Gateway with WAF. Which WAF rule sets should you recommend (minimizing administrative overhead)?",
+  [["To protect against malicious scrapers and scanners", ["Activate the bot protection rule set", "Activate a managed rule set", "Create custom rules"], 0],
+   ["To protect against SQL injection and other injection attacks seen in the wild", ["Activate the bot protection rule set", "Activate a managed rule set", "Create custom rules"], 1],
+   ["To protect against XSS and HTTP request smuggling", ["Activate the bot protection rule set", "Activate a managed rule set", "Create custom rules"], 1]],
+  "Le jeu de règles bot identifie scrapers et scanners ; les jeux de règles managés (OWASP/DRS) couvrent injections, XSS et attaques de protocole HTTP sans surcharge d'administration.", { note: RECO });
+
+S(D_OPS, "Programmers create a web application based on buying and selling products. You need to recommend a solution that protects the web application against malicious attacks. Which solution should you recommend?",
+  ["Data Loss Prevention policies", "Detection rules", "Microsoft Defender for Cloud", "Sensitivity labels"], 2,
+  "Defender for Cloud (Defender for App Service / CWP) protège les charges de travail et les applications web contre les attaques. DLP et étiquettes protègent les données, pas l'application.");
+
+M(D_GOV, "You use Defender for Cloud CSPM for AWS. You need to identify how the AWS identity provider validates the Microsoft Entra token before a scan can take place. Which three validation conditions are included?",
+  ["audience validation", "certificate thumbprint", "expiration check", "token digital signature validation", "issuer validation"], [0, 1, 3],
+  "Selon le dump, le fournisseur d'identité AWS valide l'audience, l'empreinte du certificat et la signature numérique du jeton.",
+  { rev: "À vérifier : on s'attendrait aussi à une validation de l'émetteur et de l'expiration ; retiens les trois cases cochées dans le dump." });
+
+S(D_OPS, "You implemented the recommended controls for common data exfiltration attacks on network boundaries and on servers that handle sensitive information. Despite these mitigations, proprietary corporate data was extracted and shared with a competitor. You need a solution that automates the detection of unauthorized activities, for example employees inadvertently accessing systems or information they should not be able to access. Which approach should you recommend?",
+  ["Apply classification labels to sensitive data.", "Enable the User and Entity Behavior Analytics (UEBA) functionality in Microsoft Sentinel.", "Configure Defender Endpoint detection and response (EDR) in block mode.", "Define regular expressions in Microsoft Purview."], 1,
+  "UEBA de Sentinel établit des profils de comportement des utilisateurs et entités et détecte les accès anormaux, y compris l'accès involontaire à des systèmes ou informations non autorisés.");
+
+S(D_OPS, "Remote workers' laptops do not meet the Azure security benchmark. The company bought Defender for Endpoint licenses. Requirements: protect users from web-based threats; protection for Edge, Firefox and Chrome; prevent access to exploit and phishing sites; protect devices wherever they connect. What should you do?",
+  ["Configure a proxy server.", "Enable network protection.", "Deploy web protection.", "Create custom indicators."], 2,
+  "Le corrigé du dump retient la protection web de Defender for Endpoint, qui bloque domaines malveillants, phishing et sites d'exploits dans Edge, Firefox et Chrome, partout où l'appareil se connecte.",
+  { rev: "À vérifier : la protection réseau (network protection) étend la protection aux navigateurs non-Edge ; le dump l'écarte pourtant. Si ton examen propose « Enable network protection » seule, la nuance est importante." });
+
+M(D_GOV, "Azure Policy detects non-compliant resources. Management wants non-compliance to be remediated automatically where possible. Which two Azure Policy effects should you recommend?",
+  ["disabled", "modify", "deny", "deployIfNotExists", "audit"], [1, 3],
+  "Modify (ajoute ou change des propriétés/étiquettes) et deployIfNotExists (déploie une ressource ou configuration manquante) permettent la remédiation automatique via des tâches de remédiation.");
+
+S(D_NET, "IoT flow valves at remote water treatment facilities are monitored by network sensors supplied by different vendors, each on a different public cloud. You need a multicloud connectivity method for Microsoft Defender for IoT with predictable throughput. Which recommendation should your solution include?",
+  ["Create a Private Link service with an ARM template.", "Use Bicep to create an Azure ExpressRoute circuit.", "Define a Point-to-Site (P2S) VPN gateway connection.", "Set up a private endpoint using the Azure portal."], 1,
+  "ExpressRoute offre une connectivité privée au débit prévisible, contrairement aux VPN sur Internet. Bicep est l'outil d'infrastructure as code pour le créer.");
+
+S(D_DATA, "A web application interacts with an Azure SQL Database storing sensitive PII. A penetration test shows the application is vulnerable to SQL injection. Which recommendation should you include to protect this data?",
+  ["Replacing coded statements with parameterized queries", "Microsoft Entra with multifactor authentication (MFA)", "Generating a customer-managed key and enabling transparent data encryption (TDE)", "Implementing ledger for all data modifications and deletions"], 0,
+  "Les requêtes paramétrées séparent le code SQL des données saisies et neutralisent l'injection SQL à la source.");
+
+S(D_GOV, "Auditor findings: many user endpoints lack the configurations required for regulatory compliance. Requirements: framework-based standards enforced on all production Windows 10/11 systems, non-production test devices excluded, administrative overhead minimized. Which solution should you recommend?",
+  ["Create and deploy profiles in Intune.", "Deploy baselines using the Policy Analyzer.", "Import framework settings using LGPO."], 0,
+  "Les profils Intune appliquent des paramètres basés sur un référentiel à des groupes d'appareils précis (production) en excluant les groupes de test, avec peu de charge d'administration.");
+
+S(D_NET, "You want to securely grant access to on-premises and cloud resources using identity-based controls and real-time risk assessment with minimal impact on legacy applications, integrating with existing identity systems and basing access on user and device security posture. What should you implement?",
+  ["Azure VPN Access", "Microsoft Entra Internet Access", "Microsoft Entra Private Access", "Azure AD Conditional Access"], 2,
+  "Microsoft Entra Private Access (ZTNA) donne un accès basé sur l'identité et le risque aux applications privées (y compris héritées) sans VPN, en s'intégrant à l'accès conditionnel.");
+
+S(D_ID, "You are designing a solution to perform privileged tasks. What key factor should you consider in your design?",
+  ["Role-based access control (RBAC)", "Privileged access workstation", "Jump server", "Multi-factor authentication (MFA)"], 1,
+  "Une station d'accès privilégié (PAW) dédiée isole les tâches d'administration du poste de travail courant, qui est exposé au phishing et aux malwares.");
+
+S(D_OPS, "In a Microsoft Sentinel custom query, you select the T1204 User Execution technique family (Malicious Link, Malicious File, Malicious Image). Which statement correctly describes this activity?",
+  ["You are using Jupyter notebooks to perform threat hunting.", "You are using the Advanced Security Information Model (ASIM) to perform threat hunting.", "You are using a JSON workbook to perform threat hunting.", "You are using MITRE ATT&CK to perform threat hunting."], 3,
+  "T1204 « User Execution » est une technique de la matrice MITRE ATT&CK : les requêtes de hunting de Sentinel peuvent être associées à des tactiques et techniques MITRE.");
+
+F(D_ID, "You recommend Entra ID and OAuth 2.0 to centralize authentication and authorization for mobile apps. Which process is performed by each OAuth 2.0 party?",
+  [["Authorization server", ["Gives scoped access to a protected resource", "Requests access to a protected resource", "Authorizes access to a protected resource", "Uses access tokens to accept requests"], 0],
+   ["Client", ["Gives scoped access to a protected resource", "Requests access to a protected resource", "Authorizes access to a protected resource", "Uses access tokens to accept requests"], 1],
+   ["Resource owner", ["Gives scoped access to a protected resource", "Requests access to a protected resource", "Authorizes access to a protected resource", "Uses access tokens to accept requests"], 2],
+   ["Resource server", ["Gives scoped access to a protected resource", "Requests access to a protected resource", "Authorizes access to a protected resource", "Uses access tokens to accept requests"], 3]],
+  "Serveur d'autorisation : émet des jetons à portée limitée ; client : demande l'accès ; propriétaire de ressource (l'utilisateur) : autorise l'accès ; serveur de ressources : accepte les requêtes accompagnées d'un jeton d'accès.");
+
+S(D_NET, "Azure VMs for cloud administrators run Windows 11. Administrators must access the instances remotely, but access over port 3389 is expressly forbidden. You deploy Azure Bastion on the same virtual network. What should you recommend users do next?",
+  ["Connect to the target virtual machine (VM) using mstsc.exe.", "Create a Secure Socket Tunneling Protocol (SSTP) connection to a target VM.", "Create an OpenVPN connection to Bastion.", "Connect to a target VM via the Azure portal."], 3,
+  "Azure Bastion s'utilise depuis le portail Azure : connexion RDP/SSH sur TLS (443) sans exposer le port 3389 ni utiliser de client RDP local.");
+
+F(D_DEV, "AKS security plan: network traffic must be controlled and confidential processes must run in a hardware-based Trusted Execution Environment (TEE). You create a Kubernetes NetworkPolicy manifest (backend-policy, namespace development). Which task should you complete for each element?",
+  [["To apply rules to control traffic flow", ["Use kubectl to apply the named manifest", "Enable Azure Policy for Kubernetes", "Deploy a service mesh"], 0],
+   ["To run confidential processes in a TEE", ["Deploy enclave-aware containers", "Enable Secure Boot on nodes", "Use confidential VMs only for the control plane"], 0]],
+  "Le manifeste YAML NetworkPolicy s'applique avec kubectl apply -f. Les processus confidentiels s'exécutent dans des enclaves SGX via des conteneurs compatibles enclaves (confidential computing sur AKS).", { note: RECO });
+
+S(D_GOV, "You need to identify a core principle of the Zero Trust model that improves an organization's ability to prepare for and respond to security incidents effectively, following Microsoft best practices. Which principle should you identify?",
+  ["Assume that new technologies reduce breaches, making them manageable with minimal impact.", "Report every security incident to regulatory authorities, regardless of severity.", "Establish a strong network perimeter to restrict all valuable activities within the network.", "Assume breach or compromise, focus on resilience and rapid response to incidents."], 3,
+  "« Supposer la compromission » (assume breach) : on conçoit en présumant qu'une intrusion est possible, avec accent sur la résilience, la détection et la réponse rapide.");
+
+F(D_GOV, "You plan to migrate to Microsoft 365 and need to translate business governance goals into security requirements. Which Microsoft assurance area should you recommend for each requirement?",
+  [["To ensure that users can authenticate with minimal latency during a server failure", ["Information Assurance", "Operational Assurance", "Control Assurance", "Outcomes Assurance"], 1],
+   ["To ensure that sensitive emails are protected from eavesdropping", ["Information Assurance", "Operational Assurance", "Control Assurance", "Outcomes Assurance"], 0],
+   ["To ensure that retention policies are compliant with all regulatory requirements", ["Information Assurance", "Operational Assurance", "Control Assurance", "Outcomes Assurance"], 0]],
+  "L'assurance opérationnelle concerne la disponibilité et la résilience des services. L'assurance de l'information protège la confidentialité, l'intégrité et la disponibilité des données, y compris la conformité des rétentions.");
+
+S(D_GOV, "You manage a complex heterogeneous infrastructure across clouds, data centers, edge locations and on-premises servers in a centralized, unified way. You need a solution to streamline management and reduce complexity. What is the most efficient solution?",
+  ["Azure Arc", "Windows Server Update Services", "Operations Manager", "Configuration Manager"], 0,
+  "Azure Arc étend la gestion et la gouvernance Azure à des ressources hétérogènes (serveurs, Kubernetes, bases de données) où qu'elles soient.");
+
+S(D_NET, "You use Azure API Management for a multicloud, subscription-based API platform. Each client has a unique API key. Based on Microsoft Sentinel reports, you suspect improper key handling. What should you recommend?",
+  ["Ensure that keys are hashed prior to connecting to the API.", "Ensure that API keys are not stored in the API configuration.", "Ensure that the API endpoints require storage encryption.", "Ensure that keys are protected using cryptographic obfuscation."], 1,
+  "Les clés API ne doivent pas figurer dans la configuration (ni le code) ; elles doivent être stockées dans un coffre de secrets tel qu'Azure Key Vault.");
+
+S(D_OPS, "A popular application installer from a major vendor was altered in a supply chain compromise, enabling unauthorized access to customer systems. You need to prevent this type of attack following Microsoft's recommendations. What should you do?",
+  ["Implement frequent software integrity checks.", "Limit access to compromised accounts only.", "Rely on regular endpoint antivirus software.", "Require multi-factor authentication for users."], 0,
+  "La vérification régulière de l'intégrité (hachage, signatures) détecte une modification non autorisée du logiciel dans la chaîne d'approvisionnement.");
+
+O(D_OPS, "A systemic identity compromise attack gave an attacker a foothold in Entra ID. You must respond and re-establish control of the tenant without third-party support. Which four actions should you perform, in sequence?",
+  ["Isolate the bad actor.", "Investigate your environment.", "Improve security posture.", "Log a support ticket with Microsoft.", "Establish secure communications.", "Scan for malicious files.", "Regain / retain control."], [4, 1, 2, 6],
+  "Ordre du dump : établir des communications sécurisées, enquêter sur l'environnement, améliorer la posture de sécurité, puis reprendre/conserver le contrôle.");
+
+S(D_NET, "You configure Microsoft Entra Internet Access to allow external users from a partner tenant to access Microsoft 365 services in your tenant. The MFA claims of these external users need to be trusted. What should you do?",
+  ["Allow MFA optional for all external users.", "Make MFA mandatory for all external users.", "Exclude external users from the Microsoft Entra ID Protection MFA registration policy.", "Include external users in the Microsoft Entra ID Protection MFA registration policy."], 2,
+  "Pour que la MFA du tenant d'origine soit acceptée, il ne faut pas forcer ces utilisateurs à s'inscrire à la MFA dans votre tenant : on les exclut de la stratégie d'inscription.",
+  { rev: "À vérifier : la méthode canonique est de faire confiance aux revendications MFA via les paramètres d'accès inter-clients (cross-tenant access settings, inbound trust). Le dump retient l'exclusion de la stratégie d'inscription." });
+
+F(D_GOV, "You use Microsoft Purview Compliance Manager and need to improve compliance posture with generalized and specific mitigation actions. Which actions should you implement?",
+  [["Implement detective actions", ["Perform regulatory compliance audits", "Implement a preventative discretionary action", "Implement a corrective mandatory action"], 0],
+   ["Improve your compliance score by exactly nine points", ["Perform regulatory compliance audits", "Implement a preventative discretionary action", "Implement a corrective mandatory action"], 1]],
+  "Les actions de détection correspondent aux audits de conformité. Dans Compliance Manager, une action préventive discrétionnaire rapporte 9 points (obligatoire : 27).", { note: RECO });
+
+S(D_GOV, "You recommended Defender for Cloud CSPM for on-premises, GCP, AWS and Azure resources. Management also requires customized system hardening tasks that can be sorted by priority. Which Defender for Cloud feature should you recommend?",
+  ["Defender for Cloud security alerts", "Defender for Cloud security recommendations", "Defender for Cloud security initiatives", "Defender for Cloud secure scores"], 1,
+  "Les recommandations de sécurité listent les actions de durcissement, classées par priorité et par impact sur le score. Les alertes concernent des menaces actives.");
+
+S(D_DATA, "For each file in a storage container you must specify read or write permissions and the IP addresses allowed to access the file; some files must only be accessible during a specified timeframe. What should you recommend?",
+  ["Shared Access Signatures (SAS)", "Stored Access Policy (SAP)", "Customer-Managed Keys (CMK)", "Cross-Origin Resource Sharing (CORS)"], 0,
+  "Une SAS délègue un accès limité par fichier : permissions, plage d'adresses IP et période de validité.");
+
+F(D_NET, "Sensors in remote locations will be connected to the Defender for IoT portal. Which port should you recommend for each IoT application protocol?",
+  [["AMQP communications", ["443", "5671", "8883"], 1],
+   ["AMQP over WebSockets", ["443", "5671", "8883"], 0],
+   ["MQTT communication", ["443", "5671", "8883"], 2],
+   ["MQTT over WebSockets", ["443", "5671", "8883"], 0]],
+  "AMQP utilise 5671 (TLS) ; MQTT 8883 ; les deux protocoles encapsulés dans WebSockets passent par 443.");
+
+M(D_ID, "Your company has a Microsoft Entra ID P1 subscription. You need a design that evaluates sign-on signals as part of the authentication decision. In the initial testing phase, users will be granted access, but accounts with elevated privileges will require MFA. Which two tasks should you include?",
+  ["Define a custom role for administrator accounts.", "Specify an assignment that includes built-in roles.", "Deploy a conditional access policy from a template.", "Add all privileged accounts to an administrative unit.", "Create App Control policies."], [1, 2],
+  "La stratégie d'accès conditionnel issue d'un modèle (par ex. exiger la MFA des administrateurs) cible les rôles intégrés via l'affectation des utilisateurs, sans rôle personnalisé ni unité administrative.");
+
+S(D_OPS, "You review threat reports in Microsoft Defender for Cloud and suspect you are being targeted by an Advanced Persistent Threat (APT). You need a report that only focuses on the behaviors (tactics, techniques and procedures) of this APT. Which report should you pull?",
+  ["Threat Intelligence Report", "Activity Group Report", "Campaign Report", "Threat Summary Report"], 1,
+  "Le rapport « Activity Group » décrit les tactiques, techniques et procédures (TTP) d'un groupe d'attaquants. Le rapport de campagne cible une campagne précise et le résumé est plus large.");
+
+(function () {
+  var KEY = "sc100-sim-v1";
+  var PASS = 70;
+  var SECS_PER_Q = 90;
+  var store = { history: [], missed: [], custom: [] };
+  var S = { view: "home", cfg: { off: {}, n: 20 }, run: null, msg: "" };
+  var app = document.getElementById("app");
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var o = JSON.parse(raw);
+        store.history = o.history || [];
+        store.missed = o.missed || [];
+        store.custom = o.custom || [];
+      }
+    } catch (e) {}
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function bank() { return BANK.concat(store.custom); }
+  function allDomains() {
+    var d = DOMAINS.slice();
+    bank().forEach(function (q) { if (d.indexOf(q.domain) < 0) d.push(q.domain); });
+    return d;
+  }
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function fmt(s) {
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+  function letter(i) { return String.fromCharCode(65 + i); }
+
+  /* ---------- validation / scoring ---------- */
+  function isInt(n, max) { return typeof n === "number" && n % 1 === 0 && n >= 0 && n < max; }
+  function validQ(q) {
+    if (!q || typeof q !== "object") return "entrée vide";
+    if (typeof q.q !== "string" || !q.q) return "champ q manquant";
+    if (["single", "multi", "fields", "order"].indexOf(q.type) < 0) return "type inconnu";
+    if (q.type === "fields") {
+      if (!Array.isArray(q.fields) || !q.fields.length) return "fields manquant";
+      for (var i = 0; i < q.fields.length; i++) {
+        var f = q.fields[i];
+        if (!f || !f.label || !Array.isArray(f.options) || f.options.length < 2 || !isInt(f.answer, f.options.length)) return "champ " + (i + 1) + " invalide";
+      }
+      return "";
+    }
+    if (!Array.isArray(q.options) || q.options.length < 2) return "options manquantes";
+    if (q.type === "single") return isInt(q.answer, q.options.length) ? "" : "answer invalide";
+    if (!Array.isArray(q.answer) || !q.answer.length) return "answer invalide";
+    for (var k = 0; k < q.answer.length; k++) if (!isInt(q.answer[k], q.options.length)) return "answer invalide";
+    return "";
+  }
+  function isComplete(q, a) {
+    if (a === undefined || a === null) return false;
+    if (q.type === "single") return typeof a === "number";
+    if (q.type === "multi") return a.length > 0;
+    if (q.type === "order") return a.length === q.answer.length;
+    return a.length === q.fields.length && a.every(function (v) { return v >= 0; });
+  }
+  function isCorrect(q, a) {
+    if (!isComplete(q, a)) return false;
+    if (q.type === "single") return a === q.answer;
+    if (q.type === "multi") {
+      var x = a.slice().sort(), y = q.answer.slice().sort();
+      return x.length === y.length && x.every(function (v, i) { return v === y[i]; });
+    }
+    if (q.type === "order") return a.every(function (v, i) { return v === q.answer[i]; });
+    return a.every(function (v, i) { return v === q.fields[i].answer; });
+  }
+  function expected(q) {
+    if (q.type === "single") return esc(letter(q.answer) + ". " + q.options[q.answer]);
+    if (q.type === "multi") return q.answer.slice().sort().map(function (i) { return esc(letter(i) + ". " + q.options[i]); }).join("<br>");
+    if (q.type === "order") return q.answer.map(function (i, n) { return esc((n + 1) + ". " + q.options[i]); }).join("<br>");
+    return q.fields.map(function (f) { return esc(f.label) + " : <b>" + esc(f.options[f.answer]) + "</b>"; }).join("<br>");
+  }
+  function given(q, a) {
+    if (!a && a !== 0) return "Aucune réponse";
+    if (q.type === "single") return esc(letter(a) + ". " + q.options[a]);
+    if (q.type === "multi") return a.length ? a.slice().sort().map(function (i) { return esc(letter(i) + ". " + q.options[i]); }).join("<br>") : "Aucune réponse";
+    if (q.type === "order") return a.length ? a.map(function (i, n) { return esc((n + 1) + ". " + q.options[i]); }).join("<br>") : "Aucune réponse";
+    return q.fields.map(function (f, k) { return esc(f.label) + " : <b>" + (a[k] >= 0 && a[k] != null ? esc(f.options[a[k]]) : "—") + "</b>"; }).join("<br>");
+  }
+
+  /* ---------- home ---------- */
+  function pool() {
+    return bank().filter(function (q) { return !S.cfg.off[q.domain]; });
+  }
+  function renderHome() {
+    var b = bank(), doms = allDomains();
+    var counts = {};
+    doms.forEach(function (d) { counts[d] = 0; });
+    b.forEach(function (q) { counts[q.domain] += 1; });
+    var h = '<section class="hero"><h1>Simulateur SC-100</h1><p class="lead">Microsoft Cybersecurity Architect Expert. Les questions reprennent vos exercices, avec une explication pour chaque réponse.</p></section>';
+    h += '<div class="stats" aria-label="Résumé">' +
+      '<div><span class="num mono">' + b.length + '</span><span class="lbl">questions</span></div>' +
+      '<div><span class="num mono">' + store.history.length + '</span><span class="lbl">sessions faites</span></div>' +
+      '<div><span class="num mono" id="missedN">' + store.missed.filter(inBank).length + '</span><span class="lbl">à retravailler</span></div></div>';
+    h += '<section class="card"><h2>Préparer une session</h2>';
+    h += '<p class="sub">Domaines</p><div class="chips" id="chips">';
+    doms.forEach(function (d) {
+      var on = !S.cfg.off[d];
+      h += '<button class="chip" data-act="dom" data-d="' + esc(d) + '" aria-pressed="' + on + '">' + esc(d) + ' <span class="mono">' + counts[d] + '</span></button>';
+    });
+    h += '</div><p class="sub">Nombre de questions</p><div class="chips" id="ns">';
+    [10, 20, "all"].forEach(function (n) {
+      h += '<button class="chip" data-act="n" data-n="' + n + '" aria-pressed="' + (S.cfg.n === n) + '">' + (n === "all" ? "Toutes" : n) + '</button>';
+    });
+    h += '</div><p class="selinfo" id="selinfo"></p>';
+    h += '<div class="actions"><button class="btn primary" data-act="practice">Entraînement</button><button class="btn" data-act="exam">Examen blanc</button><button class="btn" data-act="errors" id="errBtn">Revoir mes erreurs</button></div>';
+    h += '<p class="small">Entraînement : correction après chaque question. Examen blanc : ' + SECS_PER_Q + ' secondes par question, correction à la fin. Seuil de réussite indicatif : ' + PASS + ' %.</p>';
+    if (S.msg) h += '<p class="msg" role="status">' + esc(S.msg) + '</p>';
+    h += '</section>';
+    if (store.history.length) {
+      h += '<section class="card"><h2>Dernières sessions</h2><ul class="hist">';
+      store.history.slice(-5).reverse().forEach(function (x) {
+        var p = Math.round(100 * x.ok / x.total), d = "";
+        try { d = new Date(x.t).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }); } catch (e) {}
+        h += '<li><span>' + esc(d) + ' · ' + (x.mode === "exam" ? "Examen" : "Entraînement") + '</span><span class="mono ' + (p >= PASS ? "okc" : "badc") + '">' + x.ok + "/" + x.total + " · " + p + " %</span></li>";
+      });
+      h += "</ul></section>";
+    }
+    h += '<section class="card"><details id="imp"><summary>Ajouter mes propres questions</summary>' +
+      '<p class="small">Collez un tableau JSON. Les ajouts restent dans ce navigateur. Types acceptés : single, multi, fields, order.</p>' +
+      '<pre class="code mono">[{"domain":"Réseau &amp; Zero Trust","type":"single",\n "q":"Question en anglais…",\n "options":["A","B","C","D"],"answer":1,\n "why":"Explication en français."}]</pre>' +
+      '<label class="sub" for="impTxt">JSON</label><textarea id="impTxt" rows="6" spellcheck="false"></textarea>' +
+      '<div class="actions"><button class="btn" data-act="import">Ajouter à la banque</button><button class="btn" data-act="clear" ' + (store.custom.length ? "" : "disabled") + '>Supprimer mes ajouts (' + store.custom.length + ')</button></div>' +
+      '<p class="msg" id="impMsg" role="status"></p></details></section>';
+    app.innerHTML = h;
+    updateSel();
+  }
+  function inBank(id) { return bank().some(function (q) { return q.id === id; }); }
+  function updateSel() {
+    var n = pool().length;
+    var el = document.getElementById("selinfo");
+    if (el) el.textContent = n + (n > 1 ? " questions disponibles" : " question disponible") + " pour cette sélection.";
+    var eb = document.getElementById("errBtn");
+    if (eb) eb.disabled = !store.missed.filter(inBank).length;
+    var pb = app.querySelectorAll('[data-act="practice"],[data-act="exam"]');
+    for (var i = 0; i < pb.length; i++) pb[i].disabled = n === 0;
+  }
+
+  /* ---------- run ---------- */
+  function start(mode) {
+    var list;
+    if (mode === "errors") {
+      list = bank().filter(function (q) { return store.missed.indexOf(q.id) >= 0; });
+      mode = "practice";
+    } else {
+      list = shuffle(pool());
+      if (S.cfg.n !== "all") list = list.slice(0, S.cfg.n);
+    }
+    if (!list.length) { S.msg = "Aucune question dans cette sélection."; renderHome(); return; }
+    S.msg = "";
+    S.run = { mode: mode, list: shuffle(list), i: 0, ans: {}, locked: {}, deadline: 0, tick: null };
+    if (mode === "exam") {
+      S.run.deadline = Date.now() + list.length * SECS_PER_Q * 1000;
+      S.run.tick = setInterval(tick, 1000);
+    }
+    S.view = "quiz";
+    render();
+  }
+  function tick() {
+    var r = S.run;
+    if (!r) return;
+    var left = Math.max(0, Math.round((r.deadline - Date.now()) / 1000));
+    var el = document.getElementById("timer");
+    if (el) { el.textContent = fmt(left); el.classList.toggle("low", left <= 60); }
+    if (left <= 0) finish();
+  }
+  function stopTimer() {
+    if (S.run && S.run.tick) { clearInterval(S.run.tick); S.run.tick = null; }
+  }
+
+  function renderQuiz() {
+    var r = S.run, q = r.list[r.i], a = r.ans[q.id], locked = !!r.locked[q.id];
+    var exam = r.mode === "exam";
+    var h = '<div class="qhead"><span class="mono">Question ' + (r.i + 1) + " / " + r.list.length + '</span><span class="tag">' + esc(q.domain) + "</span>";
+    h += exam ? '<span class="timer mono" id="timer" aria-label="Temps restant"></span>' : "<span></span>";
+    h += '</div><div class="bar"><i style="width:' + Math.round(100 * (r.i + (locked ? 1 : 0)) / r.list.length) + '%"></i></div>';
+    h += '<section class="card"><p class="prompt">' + esc(q.q) + "</p>";
+    if (q.note) h += '<p class="notei">' + esc(q.note) + "</p>";
+    if (q.type === "multi") h += '<p class="hint">Choisissez ' + q.answer.length + (q.answer.length > 1 ? " réponses." : " réponse.") + "</p>";
+    if (q.type === "order") h += '<p class="hint">Touchez les actions dans l\'ordre, ' + q.answer.length + " au total. Touchez une action de la séquence pour la retirer.</p>";
+    h += inputs(q, a, locked) + "</section>";
+    if (locked && !exam) h += feedback(q, a);
+    h += '<div class="actions sticky">';
+    if (exam) {
+      h += '<button class="btn" data-act="prev"' + (r.i === 0 ? " disabled" : "") + ">Précédente</button>";
+      h += r.i < r.list.length - 1 ? '<button class="btn primary" data-act="next">Suivante</button>' : '<button class="btn primary" data-act="finish">Terminer l\'examen</button>';
+      h += '<button class="btn quiet" data-act="finish">Terminer maintenant</button>';
+    } else {
+      if (!locked) h += '<button class="btn primary" data-act="validate"' + (isComplete(q, a) ? "" : " disabled") + ' id="valBtn">Valider</button>';
+      else h += r.i < r.list.length - 1 ? '<button class="btn primary" data-act="next">Question suivante</button>' : '<button class="btn primary" data-act="finish">Voir le résultat</button>';
+      h += '<button class="btn quiet" data-act="finish">Arrêter</button>';
+    }
+    h += "</div>";
+    app.innerHTML = h;
+    if (exam) tick();
+  }
+  function inputs(q, a, locked) {
+    var h = "";
+    if (q.type === "single" || q.type === "multi") {
+      h += '<div class="opts" role="' + (q.type === "single" ? "radiogroup" : "group") + '">';
+      q.options.forEach(function (o, i) {
+        var sel = q.type === "single" ? a === i : !!(a && a.indexOf(i) >= 0);
+        var right = q.type === "single" ? q.answer === i : q.answer.indexOf(i) >= 0;
+        var cls = "opt" + (sel ? " sel" : "");
+        var mark = "";
+        if (locked) {
+          if (right) { cls += " ok"; mark = '<span class="mk">Bonne réponse</span>'; }
+          else if (sel) { cls += " bad"; mark = '<span class="mk">Votre choix</span>'; }
+        }
+        h += '<button class="' + cls + '" data-act="opt" data-i="' + i + '" aria-pressed="' + sel + '"' + (locked ? " disabled" : "") + '><span class="ltr mono">' + letter(i) + '</span><span class="otx">' + esc(o) + "</span>" + mark + "</button>";
+      });
+      h += "</div>";
+    } else if (q.type === "fields") {
+      h += '<div class="flds">';
+      q.fields.forEach(function (f, k) {
+        var v = a ? a[k] : -1;
+        var cls = "fld";
+        if (locked) cls += v === f.answer ? " ok" : " bad";
+        h += '<div class="' + cls + '"><label for="f' + k + '">' + esc(f.label) + '</label><select id="f' + k + '" data-f="' + k + '"' + (locked ? " disabled" : "") + '><option value="-1"' + (v < 0 || v == null ? " selected" : "") + ">Choisir…</option>";
+        f.options.forEach(function (o, i) { h += '<option value="' + i + '"' + (v === i ? " selected" : "") + ">" + esc(o) + "</option>"; });
+        h += "</select>";
+        if (locked && v !== f.answer) h += '<span class="mk">Attendu : ' + esc(f.options[f.answer]) + "</span>";
+        h += "</div>";
+      });
+      h += "</div>";
+    } else {
+      var seq = a || [];
+      h += '<p class="sub">Actions disponibles</p><div class="opts">';
+      q.options.forEach(function (o, i) {
+        var used = seq.indexOf(i) >= 0;
+        h += '<button class="opt' + (used ? " used" : "") + '" data-act="add" data-i="' + i + '"' + (used || locked ? " disabled" : "") + '><span class="ltr mono">+</span><span class="otx">' + esc(o) + "</span></button>";
+      });
+      h += '</div><p class="sub">Votre séquence</p><ol class="seq">';
+      if (!seq.length) h += '<li class="empty">Aucune action choisie.</li>';
+      seq.forEach(function (i, n) {
+        var cls = "";
+        if (locked) cls = i === q.answer[n] ? "ok" : "bad";
+        h += '<li class="' + cls + '"><button class="opt seqb ' + cls + '" data-act="rem" data-k="' + n + '"' + (locked ? " disabled" : "") + '><span class="ltr mono">' + (n + 1) + '</span><span class="otx">' + esc(q.options[i]) + "</span></button></li>";
+      });
+      h += "</ol>";
+    }
+    return h;
+  }
+  function feedback(q, a) {
+    var ok = isCorrect(q, a);
+    var h = '<section class="fb ' + (ok ? "okb" : "badb") + '" role="status"><p class="verdict">' + (ok ? "Correct" : "Incorrect") + "</p>";
+    if (!ok) h += '<p class="exp"><b>Réponse attendue</b><br>' + expected(q) + "</p>";
+    h += '<p class="why">' + esc(q.why || "") + "</p>";
+    if (q.rev) h += '<p class="rev"><b>À vérifier</b><br>' + esc(q.rev) + "</p>";
+    return h + "</section>";
+  }
+
+  function setAnswer(q, a) {
+    S.run.ans[q.id] = a;
+  }
+  function finish() {
+    var r = S.run;
+    if (!r) return;
+    stopTimer();
+    var ok = 0, byDom = {}, missed = [], fixed = [];
+    r.list.forEach(function (q) {
+      var c = isCorrect(q, r.ans[q.id]);
+      if (!byDom[q.domain]) byDom[q.domain] = { ok: 0, n: 0 };
+      byDom[q.domain].n += 1;
+      if (c) { ok += 1; byDom[q.domain].ok += 1; fixed.push(q.id); }
+      else if (r.mode === "exam" || r.locked[q.id]) missed.push(q.id);
+    });
+    store.missed = store.missed.filter(function (id) { return fixed.indexOf(id) < 0 && missed.indexOf(id) < 0; }).concat(missed);
+    store.history.push({ t: Date.now(), mode: r.mode, ok: ok, total: r.list.length });
+    store.history = store.history.slice(-20);
+    save();
+    r.result = { ok: ok, byDom: byDom };
+    S.view = "results";
+    render();
+  }
+
+  function renderResults() {
+    var r = S.run, res = r.result, total = r.list.length;
+    var p = Math.round(100 * res.ok / total), pass = p >= PASS;
+    var h = '<section class="hero"><p class="sub">' + (r.mode === "exam" ? "Examen blanc" : "Entraînement") + "</p><h1>" + res.ok + " / " + total + ' <span class="pct mono ' + (pass ? "okc" : "badc") + '">' + p + " %</span></h1><p class=\"lead\">" +
+      (pass ? "Au-dessus du seuil indicatif de " + PASS + " %." : "Sous le seuil indicatif de " + PASS + " %. Les questions manquées sont gardées dans « Revoir mes erreurs ».") + "</p></section>";
+    h += '<section class="card"><h2>Par domaine</h2><ul class="doms">';
+    Object.keys(res.byDom).forEach(function (d) {
+      var x = res.byDom[d], pc = Math.round(100 * x.ok / x.n);
+      h += "<li><span>" + esc(d) + '</span><span class="mono">' + x.ok + "/" + x.n + '</span><div class="bar sm"><i class="' + (pc >= PASS ? "g" : "r") + '" style="width:' + pc + '%"></i></div></li>';
+    });
+    h += "</ul></section>";
+    h += '<section class="card"><h2>Correction détaillée</h2>';
+    r.list.forEach(function (q, n) {
+      var a = r.ans[q.id], c = isCorrect(q, a);
+      h += '<details class="rv"><summary><span class="st ' + (c ? "okc" : "badc") + '">' + (c ? "Juste" : "Faux") + "</span><span>" + (n + 1) + ". " + esc(q.q) + "</span></summary>";
+      if (!c) h += '<p class="exp"><b>Votre réponse</b><br>' + given(q, a) + "</p>";
+      h += '<p class="exp"><b>Réponse attendue</b><br>' + expected(q) + '</p><p class="why">' + esc(q.why || "") + "</p>";
+      if (q.rev) h += '<p class="rev"><b>À vérifier</b><br>' + esc(q.rev) + "</p>";
+      h += "</details>";
+    });
+    h += "</section>";
+    h += '<div class="actions"><button class="btn primary" data-act="home">Nouvelle session</button><button class="btn" data-act="errors"' + (store.missed.filter(inBank).length ? "" : " disabled") + ">Revoir mes erreurs</button></div>";
+    app.innerHTML = h;
+  }
+
+  function render() {
+    window.scrollTo(0, 0);
+    if (S.view === "home") renderHome();
+    else if (S.view === "quiz") renderQuiz();
+    else renderResults();
+  }
+
+  /* ---------- events ---------- */
+  app.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-act]");
+    if (!t || t.disabled) return;
+    var act = t.getAttribute("data-act"), r = S.run, q = r && r.list[r.i];
+    if (act === "dom") {
+      var d = t.getAttribute("data-d");
+      S.cfg.off[d] = !S.cfg.off[d];
+      t.setAttribute("aria-pressed", String(!S.cfg.off[d]));
+      updateSel();
+    } else if (act === "n") {
+      var v = t.getAttribute("data-n");
+      S.cfg.n = v === "all" ? "all" : parseInt(v, 10);
+      var all = app.querySelectorAll('[data-act="n"]');
+      for (var i = 0; i < all.length; i++) all[i].setAttribute("aria-pressed", String(all[i] === t));
+    } else if (act === "practice") start("practice");
+    else if (act === "exam") start("exam");
+    else if (act === "errors") start("errors");
+    else if (act === "opt") {
+      if (r.locked[q.id]) return;
+      var idx = parseInt(t.getAttribute("data-i"), 10);
+      if (q.type === "single") setAnswer(q, idx);
+      else {
+        var cur = (r.ans[q.id] || []).slice(), at = cur.indexOf(idx);
+        if (at >= 0) cur.splice(at, 1); else cur.push(idx);
+        setAnswer(q, cur);
+      }
+      renderQuiz();
+    } else if (act === "add") {
+      var s1 = (r.ans[q.id] || []).slice();
+      if (s1.length < q.answer.length) s1.push(parseInt(t.getAttribute("data-i"), 10));
+      setAnswer(q, s1); renderQuiz();
+    } else if (act === "rem") {
+      var s2 = (r.ans[q.id] || []).slice();
+      s2.splice(parseInt(t.getAttribute("data-k"), 10), 1);
+      setAnswer(q, s2); renderQuiz();
+    } else if (act === "validate") {
+      if (!isComplete(q, r.ans[q.id])) return;
+      r.locked[q.id] = true; renderQuiz();
+    } else if (act === "next") { r.i = Math.min(r.list.length - 1, r.i + 1); render(); }
+    else if (act === "prev") { r.i = Math.max(0, r.i - 1); render(); }
+    else if (act === "finish") finish();
+    else if (act === "home") { S.view = "home"; S.run = null; render(); }
+    else if (act === "import") doImport();
+    else if (act === "clear") { store.custom = []; save(); S.msg = ""; var keep = document.getElementById("imp").open; renderHome(); document.getElementById("imp").open = keep; }
+  });
+  app.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el.matches || !el.matches("select[data-f]")) return;
+    var r = S.run, q = r.list[r.i];
+    var cur = (r.ans[q.id] || q.fields.map(function () { return -1; })).slice();
+    cur[parseInt(el.getAttribute("data-f"), 10)] = parseInt(el.value, 10);
+    setAnswer(q, cur);
+    var vb = document.getElementById("valBtn");
+    if (vb) vb.disabled = !isComplete(q, cur);
+  });
+
+  function doImport() {
+    var ta = document.getElementById("impTxt"), msg = document.getElementById("impMsg");
+    var data;
+    try { data = JSON.parse(ta.value); } catch (err) { msg.textContent = "JSON invalide : " + err.message; return; }
+    if (!Array.isArray(data)) data = [data];
+    var good = [], bad = [];
+    data.forEach(function (q, k) {
+      var e = validQ(q);
+      if (e) { bad.push("#" + (k + 1) + " " + e); return; }
+      q.id = q.id && typeof q.id === "string" ? q.id : "c" + Date.now() + "-" + k;
+      q.domain = q.domain || "Personnalisé";
+      good.push(q);
+    });
+    if (bad.length) { msg.textContent = "Rien n'a été ajouté. " + bad.join(" ; "); return; }
+    store.custom = store.custom.concat(good);
+    save();
+    renderHome();
+    document.getElementById("imp").open = true;
+    document.getElementById("impMsg").textContent = good.length + " question(s) ajoutée(s).";
+  }
+
+  load();
+  render();
+})();
+
+</script>
+
+</body></html>
